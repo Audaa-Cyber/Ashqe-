@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
@@ -19,6 +20,11 @@ export default function ConnectXForm({ error, email: _email }: { error: string |
   const [submitting, setSubmitting] = useState(false)
 
   const message = error ? (ERROR_MESSAGES[error] ?? `Connection failed: ${error}`) : null
+
+  const handleClick = () => {
+    setSubmitting(true)
+    window.location.href = "/api/x/connect"
+  }
 
   return (
     <Card className="w-full max-w-md p-10 border border-border bg-background animate-fade-in">
@@ -44,17 +50,14 @@ export default function ConnectXForm({ error, email: _email }: { error: string |
           </div>
         )}
 
-        <form action="/api/x/connect" method="GET">
-          <Button
-            type="submit"
-            size="lg"
-            disabled={submitting}
-            onClick={() => setSubmitting(true)}
-            className="w-full bg-foreground text-background hover:bg-foreground/90 h-12 text-base rounded-lg font-semibold"
-          >
-            {submitting ? "Redirecting to X..." : "Continue with X"}
-          </Button>
-        </form>
+        <Button
+          size="lg"
+          disabled={submitting}
+          onClick={handleClick}
+          className="w-full bg-foreground text-background hover:bg-foreground/90 h-12 text-base rounded-lg font-semibold"
+        >
+          {submitting ? "Redirecting to X..." : "Continue with X"}
+        </Button>
 
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-center gap-2">
