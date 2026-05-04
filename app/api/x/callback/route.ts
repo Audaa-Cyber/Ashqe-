@@ -7,17 +7,22 @@ import { type NextRequest, NextResponse } from "next/server"
 export const maxDuration = 60
 
 function errRedirect(request: NextRequest, msg: string) {
+  console.error(`[v0] X callback error: ${msg}`)
   const url = new URL("/", request.url)
   url.searchParams.set("error", msg)
   return NextResponse.redirect(url)
 }
 
 export async function GET(request: NextRequest) {
+  console.log("[v0] X OAuth Callback Route")
   const supabase = await createClient()
 
   const code = request.nextUrl.searchParams.get("code")
   const stateParam = request.nextUrl.searchParams.get("state")
   const errorParam = request.nextUrl.searchParams.get("error")
+  
+  console.log("[v0] Query params - code:", !!code, "state:", !!stateParam, "error:", errorParam)
+  
   if (errorParam) return errRedirect(request, errorParam)
   if (!code || !stateParam) return errRedirect(request, "missing_code_or_state")
 
