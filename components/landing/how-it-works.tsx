@@ -32,26 +32,26 @@ export default function HowItWorks() {
   const steps = [
     {
       number: '01',
-      title: 'Connect Your Account',
-      description: 'Securely link your X account to Ashqe. We analyze your writing style, tone, and unique voice.',
+      title: 'Connect your X account',
+      description: 'Sign in securely with OAuth. No passwords, no raw tokens. Ashqe never touches credentials it doesn\'t need.',
       icon: 'connect',
     },
     {
       number: '02',
-      title: 'Train Your AI Voice',
-      description: 'Our AI learns your patterns, vocabulary, and communication style from your past posts.',
+      title: 'We study your last 50 posts',
+      description: 'Ashqe quietly reads your recent posts and builds a structured profile of your tone, vocabulary, formatting, and habits.',
       icon: 'train',
     },
     {
       number: '03',
-      title: 'Generate Content',
-      description: 'Write naturally as you normally would. Ashqe transforms your ideas into full posts in your voice.',
+      title: 'Chat with your personal agent',
+      description: 'Tell your agent what you want to say. It writes posts that sound like you wrote them yourself, every time.',
       icon: 'generate',
     },
     {
       number: '04',
-      title: 'Publish & Analyze',
-      description: 'Post directly or iterate. Track performance and refine what resonates with your audience.',
+      title: 'Publish with one tap',
+      description: 'Approve and post directly to X, or copy it elsewhere. You stay fully in control of every word that goes out.',
       icon: 'publish',
     },
   ];
@@ -62,10 +62,10 @@ export default function HowItWorks() {
         {/* Section Header */}
         <div className="max-w-2xl mb-12 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-balance">
-            How Ashqe Works
+            How Ashqe works
           </h2>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Four simple steps to unlock your voice and create content faster than ever before.
+            From connection to your first post in under five minutes. No setup, no prompts to engineer.
           </p>
         </div>
 
@@ -105,12 +105,12 @@ export default function HowItWorks() {
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/5 to-transparent" />
           <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-3xl font-bold mb-4">Powered by Advanced AI</h3>
+              <h3 className="text-3xl font-bold mb-4">A real model of your voice</h3>
               <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                We use state-of-the-art language models trained on your personal writing samples to capture every nuance of your unique voice.
+                Not a prompt. Not a template. Ashqe builds a structured style profile from your own writing — tone, rhythm, vocabulary, and the small habits that make your voice yours.
               </p>
               <ul className="space-y-3">
-                {['Real-time generation', 'Style consistency', 'Variation creation', 'Smart scheduling'].map((item, idx) => (
+                {['Tone and rhythm', 'Vocabulary patterns', 'Formatting habits', 'Topic preferences'].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3 text-foreground">
                     <svg className="w-5 h-5 text-foreground flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

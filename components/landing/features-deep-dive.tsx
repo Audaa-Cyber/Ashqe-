@@ -42,39 +42,39 @@ export default function FeaturesDive() {
 
   const features = [
     {
-      title: 'Voice Cloning',
-      description: 'Train Ashqe on your writing. It learns your voice, tone, mannerisms, and patterns.',
-      details: ['Multi-style support', 'Tone adjustment', 'Personality matching'],
+      title: 'Trained on your last 50 posts',
+      description: 'Ashqe reads your recent posts to capture how you actually write — not how AI thinks you should write.',
+      details: ['Tone analysis', 'Vocabulary mapping', 'Formatting habits'],
       icon: 'voice',
     },
     {
-      title: 'Instant Content Generation',
-      description: 'Go from idea to polished post in seconds. No more blank page syndrome.',
-      details: ['Zero latency', 'Multiple variations', 'Instant editing'],
+      title: 'Chat with your agent',
+      description: 'Just say what you want to share. Your personal agent turns it into a post that sounds like you wrote it.',
+      details: ['Natural conversation', 'Multiple drafts', 'Instant rewrites'],
       icon: 'lightning',
     },
     {
-      title: 'Style Variations',
-      description: 'Create posts in different tones without losing your core voice.',
-      details: ['Professional', 'Casual', 'Witty', 'Inspirational'],
+      title: 'A real style profile',
+      description: 'A structured profile of your voice — your patterns, your habits, your quirks. Not a generic prompt.',
+      details: ['Tone', 'Structure', 'Vocabulary', 'Habits'],
       icon: 'palette',
     },
     {
-      title: 'Performance Analytics',
-      description: 'Understand what resonates with your audience and optimize for engagement.',
-      details: ['Real-time metrics', 'Trend analysis', 'Audience insights'],
+      title: 'See what worked',
+      description: 'Quiet insights into which of your posts landed and why, so your agent keeps getting closer to your best self.',
+      details: ['Top posts', 'Style insights', 'What resonates'],
       icon: 'chart',
     },
     {
-      title: 'Smart Scheduling',
-      description: 'Schedule posts when your audience is most active for maximum reach.',
-      details: ['Optimal timing', 'Auto-retry', 'Queue management'],
+      title: 'Post directly to X',
+      description: 'Approve and ship to X with one tap, secured with OAuth. We never store raw tokens or passwords.',
+      details: ['One-tap publish', 'OAuth secured', 'You stay in control'],
       icon: 'clock',
     },
     {
-      title: 'Privacy First',
-      description: 'Your data stays yours. Enterprise-grade encryption and zero data sharing.',
-      details: ['End-to-end encryption', 'No third-party access', 'GDPR compliant'],
+      title: 'Your voice stays yours',
+      description: 'We never train shared models on your writing. Your style profile belongs to you, and only you.',
+      details: ['Private by default', 'No shared training', 'Delete anytime'],
       icon: 'shield',
     },
   ];
@@ -85,10 +85,10 @@ export default function FeaturesDive() {
         {/* Section Header */}
         <div className="max-w-2xl mb-12 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-balance">
-            Packed with powerful features
+            Built around your voice
           </h2>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Everything you need to become a more productive creator while maintaining authenticity.
+            Everything Ashqe does starts with one idea — sounding exactly like you, never like AI.
           </p>
         </div>
 
@@ -132,16 +132,16 @@ export default function FeaturesDive() {
             <h3 className="text-3xl font-bold mb-4">Why creators choose Ashqe</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
               <div>
-                <div className="text-4xl font-bold text-foreground mb-2">10x</div>
-                <p className="text-muted-foreground">Faster content creation with AI assistance</p>
+                <div className="text-4xl font-bold text-foreground mb-2">50</div>
+                <p className="text-muted-foreground">Recent posts analyzed to learn your unique voice</p>
               </div>
               <div>
                 <div className="text-4xl font-bold text-foreground mb-2">100%</div>
-                <p className="text-muted-foreground">Your voice, authenticity preserved in every post</p>
+                <p className="text-muted-foreground">You. Every post sounds like you actually wrote it</p>
               </div>
               <div>
-                <div className="text-4xl font-bold text-foreground mb-2">24/7</div>
-                <p className="text-muted-foreground">Available whenever inspiration strikes</p>
+                <div className="text-4xl font-bold text-foreground mb-2">5 min</div>
+                <p className="text-muted-foreground">From signing in to your first post in your voice</p>
               </div>
             </div>
           </div>

@@ -11,10 +11,10 @@ export default function StyleCardShowcase() {
       <div className="max-w-7xl mx-auto px-6 space-y-12">
         <div className="max-w-2xl mx-auto text-center space-y-6 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight text-balance">
-            Your voice, perfectly captured
+            From your posts to your style profile
           </h2>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Click to see how Ashqe understands and preserves your unique writing style
+            Tap the card. See how Ashqe turns your X profile into a structured model of your voice.
           </p>
         </div>
 
@@ -35,10 +35,10 @@ export default function StyleCardShowcase() {
                     </div>
                     <div>
                       <p className="text-lg font-bold text-foreground">@your_handle</p>
-                      <p className="text-sm text-muted-foreground mt-2">"Your unique writing signature"</p>
+                      <p className="text-sm text-muted-foreground mt-2">50 posts analyzed</p>
                     </div>
                     <p className="text-xs text-muted-foreground pt-4">
-                      {isFlipped ? 'Click to see the analysis' : 'Click to reveal your writing profile'}
+                      Tap to see your style profile
                     </p>
                   </div>
                 </Card>
@@ -49,23 +49,23 @@ export default function StyleCardShowcase() {
                 <Card className="w-full h-full flex items-center justify-center p-12 smooth-shadow-lg border border-border bg-foreground text-background">
                   <div className="text-center space-y-6">
                     <div className="space-y-2">
-                      <p className="text-sm font-semibold text-background/70 uppercase tracking-widest">Voice Analysis</p>
-                      <p className="text-2xl font-bold">Your Style Profile</p>
+                      <p className="text-sm font-semibold text-background/70 uppercase tracking-widest">Style Profile</p>
+                      <p className="text-2xl font-bold">This is how you write</p>
                     </div>
                     <div className="space-y-3 text-sm">
-                      <p>"Short, punchy thoughts that land clean, casual, and sharp"</p>
+                      <p className="opacity-90">"Short, honest thoughts. Casual rhythm. A line that lands at the end."</p>
                       <div className="grid grid-cols-3 gap-4 pt-4">
                         <div>
                           <p className="text-xs opacity-70">Tone</p>
-                          <p className="font-semibold">Casual</p>
+                          <p className="font-semibold">Honest</p>
                         </div>
                         <div>
                           <p className="text-xs opacity-70">Length</p>
                           <p className="font-semibold">Concise</p>
                         </div>
                         <div>
-                          <p className="text-xs opacity-70">Style</p>
-                          <p className="font-semibold">Direct</p>
+                          <p className="text-xs opacity-70">Rhythm</p>
+                          <p className="font-semibold">Punchy</p>
                         </div>
                       </div>
                     </div>

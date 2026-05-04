@@ -15,10 +15,10 @@ export default function FinalCTA() {
         <div className="space-y-8 animate-fade-in">
           <div className="space-y-4">
             <h2 className="text-5xl md:text-7xl font-bold leading-tight text-balance">
-              Ready to write 10x faster?
+              Meet the AI that sounds like you.
             </h2>
             <p className="text-xl text-background/80 leading-relaxed max-w-2xl mx-auto">
-              Join thousands of creators who are already amplifying their voice with Ashqe. Start free today, no credit card needed.
+              Connect your X account and have your personal writing agent in under five minutes.
             </p>
           </div>
 

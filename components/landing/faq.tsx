@@ -10,31 +10,27 @@ export default function FAQ() {
   const faqs = [
     {
       question: 'How does Ashqe learn my writing style?',
-      answer: 'Ashqe analyzes your past posts on X to understand your vocabulary, tone, sentence structure, and unique voice patterns. We process this data securely and use it to train your personalized AI model. The more posts we analyze, the better the AI becomes at capturing your authentic voice.',
+      answer: "After you connect your X account, Ashqe reads your last 50 posts and builds a structured style profile — your tone, vocabulary, sentence structure, formatting habits, and the patterns that make your voice yours. That profile is what your personal agent writes from.",
     },
     {
       question: 'Will my posts sound like AI?',
-      answer: 'No. Ashqe is specifically designed to sound like YOU, not like generic AI. The AI learns your unique voice and generates content that maintains your personal style, humor, and perspective. Your audience should never be able to tell the difference.',
+      answer: "No. Ashqe doesn't write like a generic AI — it writes like you. Because it's grounded in your own posts, your agent picks up the small things: how you open a thought, how you land a joke, how long your sentences run. People who follow you shouldn't be able to tell the difference.",
     },
     {
       question: 'Is my data safe and private?',
-      answer: 'Your privacy is our top priority. All data is encrypted end-to-end, and we never share your writing samples or personal information with third parties. We comply with GDPR, CCPA, and other data protection regulations. You can delete your data anytime.',
+      answer: "Yes. We connect to X through OAuth, so we never see your password and never store raw tokens. Your style profile belongs to you, is never used to train shared models, and you can delete everything from your account at any time.",
     },
     {
-      question: 'Can I edit the generated posts?',
-      answer: 'Absolutely. You have full control over every post. The AI generates suggestions, but you can edit, rewrite, or completely change anything before posting. We provide multiple variations so you can pick the best one or create a hybrid version.',
+      question: 'Can I edit the posts before publishing?',
+      answer: "Always. Your agent suggests posts and variations — you decide what gets shipped. You can rewrite, tweak, mix drafts together, or throw it all away and start over. Nothing is posted until you tap publish.",
     },
     {
       question: 'How long does it take to set up?',
-      answer: "Just 5 minutes. Connect your X account, let Ashqe analyze your recent posts (usually 1-2 minutes), and you're ready to generate content. The AI improves over time as it sees more of your posts.",
+      answer: "About five minutes. Sign in with X, let Ashqe analyze your recent posts, and you'll be chatting with your personal agent on the other side. The more you use it, the sharper it gets.",
     },
     {
-      question: 'What if I want different tones for different posts?',
-      answer: 'Ashqe supports style variations. You can generate posts in different tones (professional, casual, witty, inspirational) while keeping your core voice. This lets you adapt to different contexts without sounding inauthentic.',
-    },
-    {
-      question: 'Can I use Ashqe for other platforms besides X?',
-      answer: "Currently, Ashqe is optimized for X. We're working on integrations with LinkedIn, Instagram, and other platforms. Your voice model will transfer across platforms once available.",
+      question: 'Does Ashqe post to X for me?',
+      answer: "Only when you ask it to. Once you approve a post, you can publish it directly to X with one tap, secured through OAuth. You can also just copy the text and post it yourself — it's your account, your call.",
     },
   ];
 

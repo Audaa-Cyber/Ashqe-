@@ -12,14 +12,14 @@ export default function HeroSection() {
         <div className="space-y-8 animate-fade-in">
           <div className="space-y-4">
             <div className="inline-block px-4 py-2 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
-              Powered by Your Voice
+              Your personal AI agent for X
             </div>
             <h1 className="text-6xl md:text-7xl font-bold tracking-tight leading-tight text-balance">
-              Write like you. Just faster.
+              An AI that writes exactly like you.
             </h1>
           </div>
           <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
-            Your voice, your tone, your style — turned into an AI that actually sounds like you. Create content 10x faster while staying authentically you.
+            Connect your X account. Ashqe studies your last 50 posts, learns your voice, and becomes a personal agent that writes posts that sound unmistakably you.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <Button size="lg" className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8 text-base rounded-lg">
@@ -52,22 +52,22 @@ export default function HeroSection() {
 
             {/* Chat bubble preview */}
             <div className="absolute bottom-12 right-0 w-56 rounded-2xl bg-foreground text-background p-6 smooth-shadow-lg text-sm space-y-3" style={{ animation: 'slideIn 0.8s ease-out 0.3s both' }}>
-              <p className="font-semibold text-base">Generate post</p>
-              <p className="text-background/80">"Create an engaging thread about AI trends"</p>
+              <p className="font-semibold text-base">Write a post about</p>
+              <p className="text-background/80">"shipping side projects fast"</p>
               <div className="pt-2 space-y-2">
                 <div className="h-2 w-full bg-background/20 rounded" />
                 <div className="h-2 w-4/5 bg-background/20 rounded" />
               </div>
             </div>
 
-            {/* Stats card */}
+            {/* Style profile card */}
             <div className="absolute top-12 left-0 rounded-xl border border-border bg-background smooth-shadow-lg p-4 text-sm space-y-3 w-48" style={{ animation: 'fadeIn 1s ease-out 0.5s both' }}>
               <div className="space-y-1">
-                <p className="text-muted-foreground text-xs font-medium">TOP PERFORMING</p>
-                <p className="font-bold text-lg">2,847 Likes</p>
+                <p className="text-muted-foreground text-xs font-medium">STYLE PROFILE</p>
+                <p className="font-bold text-lg">Voice trained</p>
               </div>
               <div className="w-full bg-secondary rounded h-2">
-                <div className="w-4/5 bg-foreground h-2 rounded" />
+                <div className="w-full bg-foreground h-2 rounded" />
               </div>
             </div>
           </div>
