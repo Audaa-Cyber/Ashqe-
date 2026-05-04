@@ -7,17 +7,13 @@ import { type NextRequest, NextResponse } from "next/server"
 export const maxDuration = 60
 
 function errRedirect(request: NextRequest, msg: string) {
-  const url = new URL("/connect", request.url)
+  const url = new URL("/", request.url)
   url.searchParams.set("error", msg)
   return NextResponse.redirect(url)
 }
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.redirect(new URL("/auth/login?next=/connect", request.url))
 
   const code = request.nextUrl.searchParams.get("code")
   const stateParam = request.nextUrl.searchParams.get("state")
@@ -61,7 +57,6 @@ export async function GET(request: NextRequest) {
   try {
     tweets = await fetchRecentTweets(tokens.access_token, me.id, 50)
   } catch (e) {
-    // not fatal - we can still save the connection
     console.error("[v0] X recent tweets failed", e)
   }
 
@@ -73,9 +68,60 @@ export async function GET(request: NextRequest) {
     public_metrics: t.public_metrics ?? null,
   }))
 
+  // Get or create Supabase user
+  // For X-only auth, we create a user with email = x_username@x.local
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let userId: string
+  if (user) {
+    // Already authenticated, use existing user
+    userId = user.id
+  } else {
+    // Not authenticated — create a new Supabase user with X
+    // Use a special email format to mark this as X-only auth
+    const email = `x_${me.id}@x.local`
+    const password = require("crypto").randomBytes(32).toString("hex")
+
+    const { data: newUser, error: signUpErr } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          x_username: me.username,
+          x_user_id: me.id,
+          x_authenticated: true,
+        },
+      },
+    })
+
+    if (signUpErr || !newUser.user) {
+      console.error("[v0] Failed to create Supabase user from X auth", signUpErr)
+      return errRedirect(request, "db_upsert_failed")
+    }
+
+    userId = newUser.user.id
+
+    // Immediately verify the email since X auth is trusted
+    // We need to get a session first
+    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInErr || !signInData.session) {
+      console.error("[v0] Failed to sign in new X user", signInErr)
+      return errRedirect(request, "db_upsert_failed")
+    }
+
+    // Session is established; user is verified by X OAuth
+  }
+
+  // Upsert X connection
   const { error: upsertErr } = await supabase.from("x_connections").upsert(
     {
-      user_id: user.id,
+      user_id: userId,
       x_user_id: me.id,
       x_username: me.username,
       x_name: me.name ?? null,
@@ -94,14 +140,14 @@ export async function GET(request: NextRequest) {
     return errRedirect(request, "db_upsert_failed")
   }
 
-  // Build style profile in the background-ish - it's fast enough to wait briefly
+  // Build style profile
   if (tweets.length > 0) {
     try {
       const profile = await analyzeStyle(tweets)
       if (profile) {
         await supabase.from("style_profiles").upsert(
           {
-            user_id: user.id,
+            user_id: userId,
             tone: profile.tone,
             length_pref: profile.length_pref,
             rhythm: profile.rhythm,

@@ -8,13 +8,8 @@ import {
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.redirect(new URL("/auth/login?next=/connect", request.url))
-  }
+  // X OAuth doesn't require existing Supabase user
+  // The callback will create one if needed
 
   const clientId = process.env.X_CLIENT_ID
   if (!clientId) {

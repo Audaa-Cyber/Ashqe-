@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
 interface Props {
@@ -59,22 +58,15 @@ export default function DashboardHeader({ user, connection }: Props) {
                 <button
                   type="button"
                   onClick={async () => {
-                    await fetch("/api/x/disconnect", { method: "POST" })
-                    window.location.href = "/connect"
+                    const res = await fetch("/api/x/disconnect", { method: "POST" })
+                    if (res.ok) {
+                      window.location.href = "/"
+                    }
                   }}
-                  className="w-full text-left px-3 py-2 rounded hover:bg-secondary"
+                  className="w-full text-left px-3 py-2 rounded hover:bg-secondary text-destructive"
                 >
-                  Disconnect from X
+                  Sign out
                 </button>
-                <form action="/auth/logout" method="POST" className="w-full">
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    className="w-full justify-start px-3 py-2 h-auto font-normal hover:bg-secondary"
-                  >
-                    Sign out
-                  </Button>
-                </form>
               </div>
             )}
           </div>
