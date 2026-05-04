@@ -26,7 +26,7 @@ export default function FAQ() {
     },
     {
       question: 'How long does it take to set up?',
-      answer: 'Just 5 minutes. Connect your X account, let Ashqe analyze your recent posts (usually 1-2 minutes), and you&apos;re ready to generate content. The AI improves over time as it sees more of your posts.',
+      answer: "Just 5 minutes. Connect your X account, let Ashqe analyze your recent posts (usually 1-2 minutes), and you're ready to generate content. The AI improves over time as it sees more of your posts.",
     },
     {
       question: 'What if I want different tones for different posts?',
@@ -34,11 +34,7 @@ export default function FAQ() {
     },
     {
       question: 'Can I use Ashqe for other platforms besides X?',
-      answer: 'Currently, Ashqe is optimized for X. We&apos;re working on integrations with LinkedIn, Instagram, and other platforms. Your voice model will transfer across platforms once available.',
-    },
-    {
-      question: 'What&apos;s the pricing?',
-      answer: 'We offer a free tier to get started. Paid plans start at $19/month for unlimited generation and advanced features. We also have enterprise plans for teams and organizations. No credit card required for the free trial.',
+      answer: "Currently, Ashqe is optimized for X. We're working on integrations with LinkedIn, Instagram, and other platforms. Your voice model will transfer across platforms once available.",
     },
   ];
 
