@@ -3,30 +3,56 @@
 import { Card } from '@/components/ui/card';
 
 export default function HowItWorks() {
+  const getIcon = (iconName: string) => {
+    const iconMap: { [key: string]: JSX.Element } = {
+      connect: (
+        <svg className="w-8 h-8 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+      ),
+      train: (
+        <svg className="w-8 h-8 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      generate: (
+        <svg className="w-8 h-8 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      publish: (
+        <svg className="w-8 h-8 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    };
+    return iconMap[iconName] || null;
+  };
+
   const steps = [
     {
       number: '01',
       title: 'Connect Your Account',
       description: 'Securely link your X account to Ashqe. We analyze your writing style, tone, and unique voice.',
-      icon: '🔗',
+      icon: 'connect',
     },
     {
       number: '02',
       title: 'Train Your AI Voice',
       description: 'Our AI learns your patterns, vocabulary, and communication style from your past posts.',
-      icon: '🧠',
+      icon: 'train',
     },
     {
       number: '03',
       title: 'Generate Content',
       description: 'Write naturally as you normally would. Ashqe transforms your ideas into full posts in your voice.',
-      icon: '✨',
+      icon: 'generate',
     },
     {
       number: '04',
       title: 'Publish & Analyze',
       description: 'Post directly or iterate. Track performance and refine what resonates with your audience.',
-      icon: '📊',
+      icon: 'publish',
     },
   ];
 
@@ -59,7 +85,9 @@ export default function HowItWorks() {
                 <div className="relative z-10 space-y-4">
                   <div className="flex items-start justify-between">
                     <span className="text-5xl font-bold text-muted/30">{step.number}</span>
-                    <span className="text-4xl">{step.icon}</span>
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                      {getIcon(step.icon)}
+                    </div>
                   </div>
                   <h3 className="text-2xl font-bold text-foreground">{step.title}</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">{step.description}</p>
@@ -84,7 +112,9 @@ export default function HowItWorks() {
               <ul className="space-y-3">
                 {['Real-time generation', 'Style consistency', 'Variation creation', 'Smart scheduling'].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3 text-foreground">
-                    <span className="text-lg">✓</span>
+                    <svg className="w-5 h-5 text-foreground flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                     <span>{item}</span>
                   </li>
                 ))}

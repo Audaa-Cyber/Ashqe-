@@ -19,15 +19,15 @@ export default function StyleCardShowcase() {
         </div>
 
         {/* Flip Card */}
-        <div className="flex justify-center pt-4 animate-fade-in pb-32 overflow-visible">
+        <div className="flex justify-center pt-4 animate-fade-in pb-32">
           <div 
-            className="card-flip w-full max-w-2xl h-80 cursor-pointer"
+            className="w-full max-w-2xl h-80 cursor-pointer card-flip"
             onClick={() => setIsFlipped(!isFlipped)}
           >
             <div className={`card-flip-inner ${isFlipped ? 'flipped' : ''}`}>
               {/* Front - Input Side */}
-              <div className="card-flip-front w-full h-full">
-                <Card className="w-full h-full flex flex-col items-center justify-center p-12 smooth-shadow-lg border border-border bg-secondary/50 hover-lift">
+              <div className="card-flip-front">
+                <Card className="w-full h-full flex flex-col items-center justify-center p-12 smooth-shadow-lg border border-border bg-secondary/50">
                   <div className="text-center space-y-6">
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">Your X Profile</p>
@@ -45,7 +45,7 @@ export default function StyleCardShowcase() {
               </div>
 
               {/* Back - Analysis Side */}
-              <div className="card-flip-back w-full h-full">
+              <div className="card-flip-back">
                 <Card className="w-full h-full flex items-center justify-center p-12 smooth-shadow-lg border border-border bg-foreground text-background">
                   <div className="text-center space-y-6">
                     <div className="space-y-2">

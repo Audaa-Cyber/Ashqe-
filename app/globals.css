@@ -143,11 +143,16 @@
 
   .card-flip {
     perspective: 1000px;
+    width: 100%;
+    height: 100%;
   }
 
   .card-flip-inner {
     transition: transform 0.6s;
     transform-style: preserve-3d;
+    position: relative;
+    width: 100%;
+    height: 100%;
   }
 
   .card-flip-inner.flipped {
@@ -158,6 +163,11 @@
   .card-flip-back {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
   }
 
   .card-flip-back {
