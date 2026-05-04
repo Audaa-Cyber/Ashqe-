@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -22,8 +23,8 @@ export default function HeroSection() {
             Connect your X account. Ashqe studies your last 50 posts, learns your voice, and becomes a personal agent that writes posts that sound unmistakably you.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <Button size="lg" className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8 text-base rounded-lg">
-              Get Started
+            <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8 text-base rounded-lg">
+              <Link href="/connect">Get Started</Link>
             </Button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
@@ -10,12 +11,12 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="text-2xl font-bold tracking-tight">Ashqe</div>
           <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-secondary text-foreground font-medium">
-            ✨ AI Writing
+            AI Writing
           </span>
-        </div>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-12 text-sm">
@@ -35,8 +36,8 @@ export default function Header() {
 
         {/* CTA Button */}
         <div className="flex items-center gap-4">
-          <Button className="hidden sm:flex bg-foreground text-background hover:bg-foreground/90 rounded-lg font-semibold">
-            Connect X
+          <Button asChild className="hidden sm:flex bg-foreground text-background hover:bg-foreground/90 rounded-lg font-semibold">
+            <Link href="/connect">Connect X</Link>
           </Button>
           
           {/* Mobile Menu Button */}
@@ -66,8 +67,8 @@ export default function Header() {
           <a href="#" className="block text-foreground hover:text-muted-foreground transition-colors font-medium">
             Blog
           </a>
-          <Button className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-lg font-semibold">
-            Connect X
+          <Button asChild className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-lg font-semibold">
+            <Link href="/connect">Connect X</Link>
           </Button>
         </div>
       )}

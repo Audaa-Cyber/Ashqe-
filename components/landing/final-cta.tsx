@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function FinalCTA() {
@@ -24,10 +25,11 @@ export default function FinalCTA() {
 
           <div className="flex justify-center pt-4">
             <Button
+              asChild
               size="lg"
               className="bg-background text-foreground hover:bg-secondary h-12 px-12 text-base rounded-lg font-semibold"
             >
-              Get Started
+              <Link href="/connect">Get Started</Link>
             </Button>
           </div>
         </div>
