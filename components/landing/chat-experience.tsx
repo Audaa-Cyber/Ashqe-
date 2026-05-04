@@ -70,37 +70,6 @@ export default function ChatExperience() {
             </div>
           </Card>
         </div>
-
-        {/* Info Section */}
-        <div className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 animate-fade-in">
-          <div className="text-center space-y-3">
-            <div className="w-10 h-10 mx-auto bg-secondary rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <p className="text-lg font-bold text-foreground">Real-time</p>
-            <p className="text-sm text-muted-foreground">Generation in seconds</p>
-          </div>
-          <div className="text-center space-y-3">
-            <div className="w-10 h-10 mx-auto bg-secondary rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-lg font-bold text-foreground">Accurate</p>
-            <p className="text-sm text-muted-foreground">Maintains your style perfectly</p>
-          </div>
-          <div className="text-center space-y-3">
-            <div className="w-10 h-10 mx-auto bg-secondary rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-lg font-bold text-foreground">Unlimited</p>
-            <p className="text-sm text-muted-foreground">Generate as much as you want</p>
-          </div>
-        </div>
       </div>
     </section>
   );
