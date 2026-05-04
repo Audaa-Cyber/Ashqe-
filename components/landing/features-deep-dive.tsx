@@ -3,42 +3,79 @@
 import { Card } from '@/components/ui/card';
 
 export default function FeaturesDive() {
+  const getIcon = (iconName: string) => {
+    const iconMap: { [key: string]: JSX.Element } = {
+      voice: (
+        <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L19.414 18.414m-2.828-2.828l1.414-1.414M9.172 9.172L7.757 7.757m1.414 1.414L5.343 5.343M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      lightning: (
+        <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      palette: (
+        <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.414-1.414a2 2 0 012.828 0l2.828 2.828a2 2 0 010 2.828l-2.829 2.829m-4-4l4 4" />
+        </svg>
+      ),
+      chart: (
+        <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      ),
+      clock: (
+        <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      shield: (
+        <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7.784-4.817a.5.5 0 00-.596.72c.178.283.408.546.681.78M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    };
+    return iconMap[iconName] || null;
+  };
+
   const features = [
     {
       title: 'Voice Cloning',
       description: 'Train Ashqe on your writing. It learns your voice, tone, mannerisms, and patterns.',
       details: ['Multi-style support', 'Tone adjustment', 'Personality matching'],
-      icon: '🎭',
+      icon: 'voice',
     },
     {
       title: 'Instant Content Generation',
       description: 'Go from idea to polished post in seconds. No more blank page syndrome.',
       details: ['Zero latency', 'Multiple variations', 'Instant editing'],
-      icon: '⚡',
+      icon: 'lightning',
     },
     {
       title: 'Style Variations',
       description: 'Create posts in different tones without losing your core voice.',
       details: ['Professional', 'Casual', 'Witty', 'Inspirational'],
-      icon: '🎨',
+      icon: 'palette',
     },
     {
       title: 'Performance Analytics',
       description: 'Understand what resonates with your audience and optimize for engagement.',
       details: ['Real-time metrics', 'Trend analysis', 'Audience insights'],
-      icon: '📈',
+      icon: 'chart',
     },
     {
       title: 'Smart Scheduling',
       description: 'Schedule posts when your audience is most active for maximum reach.',
       details: ['Optimal timing', 'Auto-retry', 'Queue management'],
-      icon: '⏰',
+      icon: 'clock',
     },
     {
       title: 'Privacy First',
       description: 'Your data stays yours. Enterprise-grade encryption and zero data sharing.',
       details: ['End-to-end encryption', 'No third-party access', 'GDPR compliant'],
-      icon: '🔒',
+      icon: 'shield',
     },
   ];
 
@@ -67,7 +104,9 @@ export default function FeaturesDive() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-2xl font-bold text-foreground">{feature.title}</h3>
-                    <span className="text-4xl">{feature.icon}</span>
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                      {getIcon(feature.icon)}
+                    </div>
                   </div>
                   <p className="text-base text-muted-foreground leading-relaxed">{feature.description}</p>
                   <div className="flex flex-wrap gap-2 pt-4">

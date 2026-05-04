@@ -19,7 +19,7 @@ export default function StyleCardShowcase() {
         </div>
 
         {/* Flip Card */}
-        <div className="flex justify-center pt-8 animate-fade-in pb-16">
+        <div className="flex justify-center pt-4 animate-fade-in pb-32 overflow-visible">
           <div 
             className="card-flip w-full max-w-2xl h-80 cursor-pointer"
             onClick={() => setIsFlipped(!isFlipped)}
