@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  const clientId = process.env.X_CLIENT_ID
-  const clientSecret = process.env.X_CLIENT_SECRET
-
   return NextResponse.json({
-    x_client_id_set: !!clientId,
-    x_client_id_length: clientId?.length ?? 0,
-    x_client_secret_set: !!clientSecret,
-    x_client_secret_length: clientSecret?.length ?? 0,
+    env: process.env.NODE_ENV,
+    x_client_id_set: !!process.env.X_CLIENT_ID,
+    x_client_id_preview: process.env.X_CLIENT_ID?.substring(0, 10) ?? null,
+    x_client_secret_set: !!process.env.X_CLIENT_SECRET,
+    supabase_url_set: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    supabase_url_preview: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) ?? null,
+    supabase_anon_key_set: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    openrouter_set: !!process.env.OPENROUTER_API_KEY,
   })
 }

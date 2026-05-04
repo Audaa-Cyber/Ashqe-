@@ -1,14 +1,21 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-const PROTECTED_PREFIXES = ["/dashboard", "/connect"]
+const PROTECTED_PREFIXES = ["/dashboard"]
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  // Skip Supabase session check if env vars are missing
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseKey) {
+    return supabaseResponse
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()
@@ -31,10 +38,10 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname
   const isProtected = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(p + "/"))
 
+  // Redirect to home (X login) if accessing protected route without auth
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
-    url.pathname = "/auth/login"
-    url.searchParams.set("next", path)
+    url.pathname = "/"
     return NextResponse.redirect(url)
   }
 
