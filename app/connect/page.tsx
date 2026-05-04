@@ -14,8 +14,11 @@ export default async function ConnectPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect("/auth/login?next=/connect")
+  
+  // No user at all — redirect to home to sign in
+  if (!user) redirect("/")
 
+  // User has X connection — go to dashboard
   const { data: existing } = await supabase
     .from("x_connections")
     .select("x_username")
@@ -34,8 +37,8 @@ export default async function ConnectPage({
           <Link href="/" className="text-2xl font-bold tracking-tight">
             Ashqe
           </Link>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Back to home
+          <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Go to dashboard
           </Link>
         </div>
       </header>

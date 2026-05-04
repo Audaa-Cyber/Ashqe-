@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -16,7 +15,16 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 export default function ConnectXForm({ error, email: _email }: { error: string | null; email: string }) {
-  const [submitting, setSubmitting] = useState(false)
+  const [isInIframe, setIsInIframe] = useState(false)
+
+  useEffect(() => {
+    // Detect if running inside an iframe (v0 preview, embedded, etc.)
+    try {
+      setIsInIframe(window.self !== window.top)
+    } catch {
+      setIsInIframe(true)
+    }
+  }, [])
 
   const message = error ? (ERROR_MESSAGES[error] ?? `Connection failed: ${error}`) : null
 
@@ -44,17 +52,27 @@ export default function ConnectXForm({ error, email: _email }: { error: string |
           </div>
         )}
 
-        <form action="/api/x/connect" method="GET">
-          <Button
-            type="submit"
-            size="lg"
-            disabled={submitting}
-            onClick={() => setSubmitting(true)}
-            className="w-full bg-foreground text-background hover:bg-foreground/90 h-12 text-base rounded-lg font-semibold"
-          >
-            {submitting ? "Redirecting to X..." : "Continue with X"}
-          </Button>
-        </form>
+        {isInIframe && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+            <strong>Preview mode:</strong> X OAuth must be tested on the live site. Open{" "}
+            <a
+              href="https://ashqe.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-semibold"
+            >
+              ashqe.vercel.app
+            </a>{" "}
+            in a new tab to sign in with X.
+          </div>
+        )}
+
+        <a
+          href="/api/x/connect"
+          className="inline-flex w-full items-center justify-center bg-foreground text-background hover:bg-foreground/90 h-12 text-base rounded-lg font-semibold transition-colors"
+        >
+          Continue with X
+        </a>
 
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-center gap-2">
