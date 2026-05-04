@@ -87,17 +87,8 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             {/* Social Links */}
             <div className="flex items-center gap-6">
-              <a href="#twitter" className="text-2xl hover:opacity-70 transition-opacity">
+              <a href="#twitter" className="text-lg font-semibold hover:opacity-70 transition-opacity">
                 𝕏
-              </a>
-              <a href="#linkedin" className="text-2xl hover:opacity-70 transition-opacity">
-                in
-              </a>
-              <a href="#github" className="text-2xl hover:opacity-70 transition-opacity">
-                ⚙️
-              </a>
-              <a href="#discord" className="text-2xl hover:opacity-70 transition-opacity">
-                💬
               </a>
             </div>
 
@@ -105,9 +96,6 @@ export default function Footer() {
             <div className="md:text-right">
               <p className="text-sm text-muted-foreground">
                 © {currentYear} Ashqe. All rights reserved.
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Built with ❤️ for creators, by creators.
               </p>
             </div>
           </div>

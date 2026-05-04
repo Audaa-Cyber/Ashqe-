@@ -22,36 +22,13 @@ export default function FinalCTA() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <div className="flex justify-center pt-4">
             <Button
               size="lg"
-              className="bg-background text-foreground hover:bg-secondary h-12 px-8 text-base rounded-lg font-semibold"
+              className="bg-background text-foreground hover:bg-secondary h-12 px-12 text-base rounded-lg font-semibold"
             >
-              Start Free Now
+              Get Started
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 border-background text-background hover:bg-background/10 h-12 px-8 text-base rounded-lg font-semibold"
-            >
-              Schedule Demo
-            </Button>
-          </div>
-
-          {/* Trust badges */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-background/70">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">✓</span>
-              <span>5-minute setup</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">✓</span>
-              <span>No credit card required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">✓</span>
-              <span>Cancel anytime</span>
-            </div>
           </div>
         </div>
       </div>

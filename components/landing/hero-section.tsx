@@ -12,7 +12,7 @@ export default function HeroSection() {
         <div className="space-y-8 animate-fade-in">
           <div className="space-y-4">
             <div className="inline-block px-4 py-2 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
-              ✨ Powered by Your Voice
+              Powered by Your Voice
             </div>
             <h1 className="text-6xl md:text-7xl font-bold tracking-tight leading-tight text-balance">
               Write like you. Just faster.
@@ -23,21 +23,8 @@ export default function HeroSection() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <Button size="lg" className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8 text-base rounded-lg">
-              Connect X Account
+              Get Started
             </Button>
-            <Button size="lg" variant="outline" className="border-2 border-foreground hover:bg-secondary h-12 px-8 text-base rounded-lg">
-              See how it works
-            </Button>
-          </div>
-          <div className="pt-4 flex items-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🚀</span>
-              <span>5-minute setup</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🔒</span>
-              <span>Your data, your control</span>
-            </div>
           </div>
         </div>
 
@@ -65,7 +52,7 @@ export default function HeroSection() {
 
             {/* Chat bubble preview */}
             <div className="absolute bottom-12 right-0 w-56 rounded-2xl bg-foreground text-background p-6 smooth-shadow-lg text-sm space-y-3" style={{ animation: 'slideIn 0.8s ease-out 0.3s both' }}>
-              <p className="font-semibold text-base">✨ Generate post</p>
+              <p className="font-semibold text-base">Generate post</p>
               <p className="text-background/80">"Create an engaging thread about AI trends"</p>
               <div className="pt-2 space-y-2">
                 <div className="h-2 w-full bg-background/20 rounded" />
