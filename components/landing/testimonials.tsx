@@ -38,7 +38,7 @@ export default function Testimonials() {
     <section className="relative py-32 bg-background">
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
-        <div className="max-w-2xl mb-20 animate-fade-in">
+        <div className="max-w-2xl mb-12 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-balance">
             Loved by creators worldwide
           </h2>

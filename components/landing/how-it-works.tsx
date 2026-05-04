@@ -31,10 +31,10 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section id="how-it-works" className="relative py-32 bg-background">
+    <section id="how-it-works" className="relative py-16 bg-background">
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
-        <div className="max-w-2xl mb-20 animate-fade-in">
+        <div className="max-w-2xl mb-12 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-balance">
             How Ashqe Works
           </h2>
@@ -44,7 +44,7 @@ export default function HowItWorks() {
         </div>
 
         {/* Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {steps.map((step, index) => (
             <div
               key={index}

@@ -5,9 +5,9 @@ import { Card } from '@/components/ui/card';
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-20">
+    <section className="relative py-16 md:py-20 flex items-center overflow-hidden pt-24">
       <div className="hero-glow absolute inset-0" />
-      <div className="max-w-7xl mx-auto w-full px-6 py-32 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
+      <div className="max-w-7xl mx-auto w-full px-6 py-12 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
         {/* Left side - Text */}
         <div className="space-y-8 animate-fade-in">
           <div className="space-y-4">

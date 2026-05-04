@@ -43,10 +43,10 @@ export default function FAQ() {
   ];
 
   return (
-    <section className="relative py-32 bg-secondary/30">
+    <section className="relative py-16 bg-secondary/30">
       <div className="max-w-3xl mx-auto px-6">
         {/* Section Header */}
-        <div className="text-center mb-16 animate-fade-in">
+        <div className="text-center mb-8 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6 text-balance">
             Frequently Asked Questions
           </h2>

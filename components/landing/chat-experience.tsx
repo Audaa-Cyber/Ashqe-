@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/card';
 
 export default function ChatExperience() {
   return (
-    <section className="relative py-32 bg-secondary/30">
-      <div className="max-w-7xl mx-auto px-6 space-y-16">
+    <section className="relative py-16 bg-secondary/30">
+      <div className="max-w-7xl mx-auto px-6 space-y-12">
         <div className="max-w-2xl mx-auto text-center space-y-6 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight text-balance">
             Simple conversation, powerful output

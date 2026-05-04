@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function FinalCTA() {
   return (
-    <section className="relative py-32 bg-foreground text-background overflow-hidden">
+    <section className="relative py-16 bg-foreground text-background overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-background/10 blur-3xl" />
