@@ -1,28 +1,49 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 export default function ConnectPage() {
-  const router = useRouter();
-  const [status, setStatus] = useState<'idle' | 'connecting' | 'analyzing' | 'success'>('idle');
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleConnect = async () => {
+  useEffect(() => {
+    // Check for OAuth errors
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam));
+      setStatus('error');
+    }
+  }, [searchParams]);
+
+  const handleConnect = () => {
     setStatus('connecting');
-    // Simulated OAuth handshake — replace with real X OAuth flow
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setStatus('analyzing');
-    // Simulated style profile analysis — reading last 50 posts
-    await new Promise((resolve) => setTimeout(resolve, 1800));
-    setStatus('success');
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    router.push('/dashboard');
+    setError(null);
+
+    // Generate state for CSRF protection
+    const state = Math.random().toString(36).substring(7);
+    sessionStorage.setItem('oauth_state', state);
+
+    // Build OAuth URL for X
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: process.env.NEXT_PUBLIC_X_CLIENT_ID || '',
+      redirect_uri: process.env.NEXT_PUBLIC_X_REDIRECT_URI || '',
+      scope: 'tweet.read tweet.write users.read offline.access',
+      state,
+      code_challenge_method: 'plain',
+      code_challenge: state,
+    });
+
+    // Redirect to X OAuth
+    window.location.href = `https://twitter.com/i/oauth2/authorize?${params}`;
   };
 
-  const isLoading = status === 'connecting' || status === 'analyzing';
+  const isLoading = status === 'connecting';
 
   return (
     <main className="min-h-screen bg-background text-foreground flex flex-col">
@@ -59,14 +80,35 @@ export default function ConnectPage() {
               </p>
             </div>
 
+            {/* Error state */}
+            {status === 'error' && error && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                  <p className="text-sm font-semibold text-red-900 mb-2">Connection failed</p>
+                  <p className="text-sm text-red-800 mb-4">{error}</p>
+                  <Button
+                    onClick={() => {
+                      setStatus('idle');
+                      setError(null);
+                    }}
+                    size="sm"
+                    className="w-full bg-red-900 text-white hover:bg-red-800"
+                  >
+                    Try again
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Status messages */}
-            {status === 'idle' && (
+            {status === 'idle' && !error && (
               <Button
                 onClick={handleConnect}
+                disabled={isLoading}
                 size="lg"
                 className="w-full bg-foreground text-background hover:bg-foreground/90 h-12 text-base rounded-lg font-semibold"
               >
-                Continue with X
+                {isLoading ? 'Redirecting to X...' : 'Continue with X'}
               </Button>
             )}
 
@@ -75,34 +117,23 @@ export default function ConnectPage() {
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary border border-border">
                   <div className="w-5 h-5 rounded-full border-2 border-foreground border-t-transparent animate-spin" />
                   <p className="text-sm font-medium text-foreground">
-                    {status === 'connecting' ? 'Authenticating with X...' : 'Analyzing your last 50 posts...'}
+                    Authenticating with X...
                   </p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckIcon active={true} />
-                    <span>Securing OAuth handshake</span>
+                    <span>Opening X login</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckIcon active={status === 'analyzing'} />
-                    <span>Reading your recent posts</span>
+                    <CheckIcon active={false} />
+                    <span>Analyzing your last 50 posts</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckIcon active={false} />
                     <span>Building your style profile</span>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {status === 'success' && (
-              <div className="space-y-4 animate-fade-in text-center">
-                <div className="w-12 h-12 mx-auto rounded-full bg-foreground flex items-center justify-center">
-                  <svg className="w-6 h-6 text-background" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium text-foreground">Style profile ready. Taking you to your dashboard...</p>
               </div>
             )}
 
