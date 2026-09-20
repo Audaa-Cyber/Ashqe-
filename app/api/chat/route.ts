@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
     return new Response("invalid_json", { status: 400 })
   }
 
-  const messages = body.messages ?? []
+  const messages = Array.isArray(body.messages) ? body.messages : []
+  if (messages.length === 0) return new Response("messages_required", { status: 400 })
+  if (messages.length > 40) return new Response("message_limit_exceeded", { status: 413 })
   let sessionId = body.sessionId
 
   // Ensure session exists and belongs to this user
