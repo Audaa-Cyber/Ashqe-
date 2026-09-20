@@ -1,39 +1,4 @@
-'use client';
+import Link from "next/link"
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-
-export default function FinalCTA() {
-  return (
-    <section className="relative py-16 bg-foreground text-background overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-background/10 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-background/10 blur-3xl" />
-      </div>
-
-      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-        <div className="space-y-8 animate-fade-in">
-          <div className="space-y-4">
-            <h2 className="text-5xl md:text-7xl font-bold leading-tight text-balance">
-              Meet the AI that sounds like you.
-            </h2>
-            <p className="text-xl text-background/80 leading-relaxed max-w-2xl mx-auto">
-              Connect your X account and have your personal writing agent in under five minutes.
-            </p>
-          </div>
-
-          <div className="flex justify-center pt-4">
-            <Button
-              asChild
-              size="lg"
-              className="bg-background text-foreground hover:bg-secondary h-12 px-12 text-base rounded-lg font-semibold"
-            >
-              <Link href="/connect">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+export default function FinalCTA(){
+  return <section className="border-b border-white/10 py-28"><div className="mx-auto max-w-5xl px-6 text-center"><div className="ashqe-mono text-xs text-[#d9ff4f]">BEGIN / 07</div><h2 className="ashqe-display mt-5 text-6xl md:text-8xl leading-[.9]">Stop scrolling<br/>for signal.</h2><p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-white/50">Connect X. Give Ashqe context. Let it find what matters and help you act on it.</p><Link href="/connect" className="mt-9 inline-flex h-12 items-center bg-[#d9ff4f] px-7 text-sm font-bold text-black">Enter Ashqe →</Link></div></section>
