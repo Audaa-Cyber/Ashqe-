@@ -1,46 +1,26 @@
-import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import { Toaster } from '@/components/ui/sonner'
-import './globals.css'
+import type { Metadata } from "next"
+import { Bricolage_Grotesque, Manrope, IBM_Plex_Mono } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "@/components/ui/sonner"
+import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display" })
+const sans = Manrope({ subsets: ["latin"], variable: "--font-sans" })
+const mono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["400", "500", "600"] })
 
 export const metadata: Metadata = {
-  title: 'Ashqe - Write Like You, Just Faster',
-  description: 'Your voice, your tone, your style — turned into an AI that actually sounds like you',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+  title: "Ashqe — Your AI operating system for X",
+  description: "Research, discover, grow and operate your presence on X with a personal AI agent.",
+  icons: { icon: "/icon.svg", apple: "/apple-icon.png" },
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="bg-background scroll-smooth">
-      <body className="font-sans antialiased">
+      <body className={`${display.variable} ${sans.variable} ${mono.variable} font-sans antialiased`}>
         {children}
         <Toaster richColors position="top-center" />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   )
