@@ -73,8 +73,9 @@ export async function GET(request: NextRequest) {
       const { data: existingConnection } = await admin.from("x_connections").select("user_id").eq("x_user_id", me.id).maybeSingle()
 
       if (existingConnection?.user_id) {
-        userId = existingConnection.user_id
-        const { error } = await admin.auth.admin.updateUserById(userId, { password, email_confirm: true, user_metadata: { x_username: me.username, x_user_id: me.id, x_authenticated: true } })
+        const existingUserId = existingConnection.user_id
+        userId = existingUserId
+        const { error } = await admin.auth.admin.updateUserById(existingUserId, { password, email_confirm: true, user_metadata: { x_username: me.username, x_user_id: me.id, x_authenticated: true } })
         if (error) throw error
       } else {
         const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { x_username: me.username, x_user_id: me.id, x_authenticated: true } })
