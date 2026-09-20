@@ -137,7 +137,7 @@ export async function GET(request: Request) {
 
         await admin.from("ashqe_signals").insert({
           user_id: job.user_id,
-          type: "scheduled_research",
+          type: "research",
           title: job.name,
           summary: text.slice(0, 2000),
           confidence: 60,
@@ -145,7 +145,7 @@ export async function GET(request: Request) {
           metadata: { job_id: job.id, instruction: job.instruction },
         })
 
-        if (job.destination === "telegram") {
+        if (job.destination === "telegram" || job.destination === "both") {
           const { data: tg } = await admin
             .from("ashqe_telegram_connections")
             .select("chat_id")
