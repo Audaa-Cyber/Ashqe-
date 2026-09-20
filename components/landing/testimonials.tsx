@@ -9,7 +9,7 @@ export default function Testimonials() {
     <section className="border-y border-white/10 bg-[#0b0d10] py-24">
       <div className="mx-auto max-w-7xl px-6">
         <div className="max-w-3xl">
-          <div className="ashqe-mono text-xs uppercase tracking-[.18em] text-[#d9ff4f]">The operating layer</div>
+          <div className="ashqe-mono text-xs uppercase tracking-[.18em] text-[#ffffff]">The operating layer</div>
           <h2 className="ashqe-display mt-4 text-5xl md:text-7xl leading-none">Less content machine.<br/>More personal intelligence.</h2>
           <p className="mt-6 max-w-2xl text-white/55 leading-7">Ashqe is designed around one outcome: helping you make better decisions about where to spend attention, what to learn, who to talk to and what to ship.</p>
         </div>
