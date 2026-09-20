@@ -1,96 +1,107 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { ArrowRight, Sparkles, Check, PenLine, Brain, Wand2 } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="relative py-16 md:py-20 flex items-center overflow-hidden pt-24">
-      <div className="hero-glow absolute inset-0" />
-      <div className="max-w-7xl mx-auto w-full px-6 py-12 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
-        {/* Left side - Text */}
-        <div className="space-y-8 animate-fade-in">
-          <div className="space-y-4">
-            <div className="inline-block px-4 py-2 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
-              Your personal AI agent for X
-            </div>
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tight leading-tight text-balance">
-              An AI that writes exactly like you.
-            </h1>
+    <section className="relative overflow-hidden border-b border-border/50">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,hsl(var(--foreground)/0.08),transparent_35%),radial-gradient(circle_at_15%_70%,hsl(var(--foreground)/0.05),transparent_30%)]" />
+      <div className="mx-auto grid min-h-[calc(100vh-73px)] max-w-7xl items-center gap-14 px-6 py-20 lg:grid-cols-[1.02fr_0.98fr] lg:py-24">
+        <div className="relative z-10 max-w-2xl">
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/70 px-3.5 py-2 text-xs font-semibold tracking-wide">
+            <Sparkles className="h-3.5 w-3.5" />
+            YOUR PERSONAL AI AGENT FOR X
           </div>
-          <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
-            Connect your X account. Ashqe studies your last 50 posts, learns your voice, and becomes a personal agent that writes posts that sound unmistakably you.
+
+          <h1 className="text-balance text-5xl font-semibold tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+            Write like you.
+            <span className="block text-muted-foreground">Only faster.</span>
+          </h1>
+
+          <p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
+            Ashqe learns your writing style from your X posts, then turns your ideas into posts that feel natural, personal, and unmistakably yours.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90 h-12 px-8 text-base rounded-lg">
-              <Link href="/connect">Get Started</Link>
-            </Button>
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/connect"
+              className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-foreground px-6 text-sm font-semibold text-background transition-transform hover:-translate-y-0.5"
+            >
+              Get started
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <a
+              href="#how-it-works"
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-6 text-sm font-semibold transition-colors hover:bg-secondary"
+            >
+              See how it works
+            </a>
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            {['Learns your voice', 'Drafts in seconds', 'You stay in control'].map((item) => (
+              <span key={item} className="inline-flex items-center gap-2">
+                <Check className="h-4 w-4 text-foreground" />
+                {item}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* Right side - Visual Preview */}
-        <div className="relative h-[400px] md:h-[600px] flex items-center justify-center">
-          <div className="absolute inset-0 rounded-3xl border border-border/50 bg-gradient-to-br from-secondary/80 to-background smooth-shadow-lg backdrop-blur-sm overflow-hidden" />
-          
-          {/* Animated floating cards */}
-          <div className="relative w-full h-full flex items-center justify-center perspective">
-            {/* Main card */}
-            <div className="absolute w-64 h-80 rounded-2xl border border-border bg-background smooth-shadow-lg p-6 space-y-4" style={{ animation: 'float 3s ease-in-out infinite' }}>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-muted" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-2 w-20 bg-muted rounded" />
-                  <div className="h-2 w-16 bg-muted rounded opacity-50" />
+        <div className="relative z-10 mx-auto w-full max-w-xl">
+          <div className="absolute -inset-10 rounded-full bg-foreground/5 blur-3xl" />
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-background/90 p-4 shadow-2xl backdrop-blur">
+            <div className="rounded-2xl border border-border/70 bg-secondary/30 p-5">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ashqe studio</p>
+                  <p className="mt-1 text-sm font-medium">Your writing copilot</p>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-2">
+                  <Wand2 className="h-4 w-4" />
                 </div>
               </div>
-              <div className="space-y-2 pt-2">
-                <div className="h-2 w-full bg-foreground/10 rounded" />
-                <div className="h-2 w-5/6 bg-foreground/10 rounded" />
-                <div className="h-2 w-4/6 bg-foreground/10 rounded" />
-              </div>
-            </div>
 
-            {/* Chat bubble preview */}
-            <div className="absolute bottom-12 right-0 w-56 rounded-2xl bg-foreground text-background p-6 smooth-shadow-lg text-sm space-y-3" style={{ animation: 'slideIn 0.8s ease-out 0.3s both' }}>
-              <p className="font-semibold text-base">Write a post about</p>
-              <p className="text-background/80">"shipping side projects fast"</p>
-              <div className="pt-2 space-y-2">
-                <div className="h-2 w-full bg-background/20 rounded" />
-                <div className="h-2 w-4/5 bg-background/20 rounded" />
+              <div className="rounded-2xl border border-border bg-background p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-secondary">
+                    <PenLine className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">New post</p>
+                    <p className="text-xs text-muted-foreground">Written in your style</p>
+                  </div>
+                </div>
+                <p className="text-[15px] leading-7">
+                  Been building quietly for a while.
+                  <br />
+                  Today I finally shipped it.
+                  <br />
+                  <span className="text-muted-foreground">Small step, but it feels good.</span>
+                </p>
+                <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
+                  <span className="text-xs text-muted-foreground">Voice match · High</span>
+                  <button className="rounded-lg bg-foreground px-3 py-2 text-xs font-semibold text-background">Save draft</button>
+                </div>
               </div>
-            </div>
 
-            {/* Style profile card */}
-            <div className="absolute top-12 left-0 rounded-xl border border-border bg-background smooth-shadow-lg p-4 text-sm space-y-3 w-48" style={{ animation: 'fadeIn 1s ease-out 0.5s both' }}>
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs font-medium">STYLE PROFILE</p>
-                <p className="font-bold text-lg">Voice trained</p>
-              </div>
-              <div className="w-full bg-secondary rounded h-2">
-                <div className="w-full bg-foreground h-2 rounded" />
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-border bg-background p-4">
+                  <Brain className="h-4 w-4" />
+                  <p className="mt-3 text-sm font-semibold">Your voice</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Tone, rhythm, words and habits.</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-background p-4">
+                  <Sparkles className="h-4 w-4" />
+                  <p className="mt-3 text-sm font-semibold">Your ideas</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Turn rough thoughts into posts.</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-      `}</style>
     </section>
   );
 }
