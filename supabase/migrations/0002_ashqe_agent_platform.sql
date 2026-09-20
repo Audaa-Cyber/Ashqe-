@@ -1,5 +1,6 @@
 -- Ashqe agent platform foundation
 create extension if not exists pgcrypto;
+create extension if not exists vector with schema extensions;
 
 create table if not exists public.ashqe_memories (
   id uuid primary key default gen_random_uuid(),
@@ -9,7 +10,7 @@ create table if not exists public.ashqe_memories (
   content text not null,
   importance smallint not null default 3 check (importance between 1 and 5),
   source text not null default 'user',
-  embedding vector(1536),
+  embedding extensions.vector(1536),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
