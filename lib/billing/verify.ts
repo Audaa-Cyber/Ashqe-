@@ -29,7 +29,7 @@ async function verifyEvm(chain:BillingChain,token:BillingToken,recipient:string,
   if(!receipt||receipt.status!=="0x1")continue
   const block=BigInt(log.blockNumber),confirmations=latest>=block?latest-block+1n:0n
   if(confirmations<BigInt(Math.max(1,cfg.confirmations)))continue
-  const eventKey=createHash("sha256").update(chain+":"+log.transactionHash).digest("hex")
+  const eventKey=createHash("sha256").update(chain+":"+log.transactionHash+":"+String(log.logIndex ?? "0")).digest("hex")
   return {txHash:log.transactionHash,sender,amountUnits:amount,blockNumber:block,eventKey,raw:log,scannedTo:end}
  }
  return null
