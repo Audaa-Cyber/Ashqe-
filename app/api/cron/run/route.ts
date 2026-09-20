@@ -88,7 +88,7 @@ export async function GET(request: Request) {
         if (!process.env.OPENROUTER_API_KEY) throw new Error("openrouter_not_configured")
         const sources = await searchWeb(job.instruction)
         if (!sources.length) throw new Error("research_no_sources")
-        const evidence = sources.map((source, index) => "[\" + String(index + 1) + "] " + source.title + "\n" + source.url + "\n" + source.content).join("\n\n")
+        const evidence = sources.map((source, index) => "[" + String(index + 1) + "] " + source.title + "\n" + source.url + "\n" + source.content).join("\n\n")
         const { text } = await generateText({
           model: getChatModel(),
           prompt: "Act as Ashqe research agent. Synthesize only the supplied evidence. Do not invent current facts. Instruction: " + job.instruction + "\nEvidence:\n" + evidence.slice(0, 24000),
