@@ -151,3 +151,15 @@ export async function postReply(accessToken: string, text: string, inReplyToId: 
   const json = await res.json() as { data: { id: string; text: string } }
   return json.data
 }
+
+
+export async function searchRecentTweets(accessToken: string, query: string, max = 20): Promise<XTweet[]> {
+  const url = new URL("https://api.twitter.com/2/tweets/search/recent")
+  url.searchParams.set("query", query)
+  url.searchParams.set("max_results", String(Math.min(Math.max(max, 10), 100)))
+  url.searchParams.set("tweet.fields", "text,created_at,public_metrics,author_id")
+  const res = await fetch(url.toString(), { headers: { Authorization: "Bearer " + accessToken }, cache: "no-store" })
+  if (!res.ok) throw new Error("X recent search failed (" + res.status + "): " + await res.text())
+  const json = await res.json() as { data?: XTweet[] }
+  return json.data ?? []
+}
