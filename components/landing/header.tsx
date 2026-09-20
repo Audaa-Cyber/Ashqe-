@@ -1,75 +1,63 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { Menu, X } from 'lucide-react';
+
+const links = [
+  ['How it works', '#how-it-works'],
+  ['Features', '#features'],
+  ['FAQ', '#faq'],
+] as const;
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="text-2xl font-bold tracking-tight">Ashqe</div>
-          <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-secondary text-foreground font-medium">
-            AI Writing
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="text-xl font-bold tracking-[-0.03em]">Ashqe</span>
+          <span className="hidden rounded-full border border-border bg-secondary px-2 py-1 text-[10px] font-semibold uppercase tracking-wider sm:inline">
+            AI writing
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-12 text-sm">
-          <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-            How it works
-          </a>
-          <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-            Features
-          </a>
-          <a href="#" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-            Pricing
-          </a>
-          <a href="#" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-            Blog
-          </a>
+        <nav className="hidden items-center gap-8 md:flex">
+          {links.map(([label, href]) => (
+            <a key={href} href={href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              {label}
+            </a>
+          ))}
         </nav>
 
-        {/* CTA Button */}
-        <div className="flex items-center gap-4">
-          <Button asChild className="hidden sm:flex bg-foreground text-background hover:bg-foreground/90 rounded-lg font-semibold">
-            <Link href="/connect">Connect X</Link>
-          </Button>
-          
-          {/* Mobile Menu Button */}
+        <div className="flex items-center gap-3">
+          <Link href="/connect" className="hidden rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 sm:inline-flex">
+            Connect X
+          </Link>
           <button
-            className="md:hidden p-2"
+            type="button"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="rounded-lg border border-border p-2 md:hidden"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background p-6 space-y-4">
-          <a href="#how-it-works" className="block text-foreground hover:text-muted-foreground transition-colors font-medium">
-            How it works
-          </a>
-          <a href="#features" className="block text-foreground hover:text-muted-foreground transition-colors font-medium">
-            Features
-          </a>
-          <a href="#" className="block text-foreground hover:text-muted-foreground transition-colors font-medium">
-            Pricing
-          </a>
-          <a href="#" className="block text-foreground hover:text-muted-foreground transition-colors font-medium">
-            Blog
-          </a>
-          <Button asChild className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-lg font-semibold">
-            <Link href="/connect">Connect X</Link>
-          </Button>
+        <div className="border-t border-border bg-background px-6 py-5 md:hidden">
+          <div className="mx-auto max-w-7xl space-y-4">
+            {links.map(([label, href]) => (
+              <a key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="block text-sm font-medium">
+                {label}
+              </a>
+            ))}
+            <Link href="/connect" onClick={() => setMobileMenuOpen(false)} className="flex h-11 items-center justify-center rounded-lg bg-foreground text-sm font-semibold text-background">
+              Connect X
+            </Link>
+          </div>
         </div>
       )}
     </header>
