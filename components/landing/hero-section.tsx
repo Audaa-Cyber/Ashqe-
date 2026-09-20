@@ -29,10 +29,17 @@ export default function HeroSection() {
           </div>
           <div className="p-5">
             {[
-              [Radar,"EARLY SIGNAL","AI × wallets is accelerating"],
-              [Search,"RESEARCH","3 changes need your attention"],
-              [Zap,"OPPORTUNITY","A relevant conversation is opening"],
-            ].map(([Icon,label,text],i)=>{const I=Icon as typeof Radar;return <div key={i} className="border-b border-white/10 py-5 last:border-0"><div className="flex gap-4"><I className="h-4 w-4 text-[#d9ff4f]"/><div><div className="ashqe-mono text-[9px] text-white/35">{label}</div><div className="mt-2 text-sm">{text}</div></div></div></div>})}
+              { Icon: Radar, label: "EARLY SIGNAL", text: "AI × wallets is accelerating" },
+              { Icon: Search, label: "RESEARCH", text: "3 changes need your attention" },
+              { Icon: Zap, label: "OPPORTUNITY", text: "A relevant conversation is opening" },
+            ].map(({ Icon, label, text }, i) => (
+              <div key={i} className="border-b border-white/10 py-5 last:border-0">
+                <div className="flex gap-4">
+                  <Icon className="h-4 w-4 text-[#d9ff4f]"/>
+                  <div><div className="ashqe-mono text-[9px] text-white/35">{label}</div><div className="mt-2 text-sm">{text}</div></div>
+                </div>
+              </div>
+            ))}
           </div>
           <div className="border-t border-white/10 bg-white/[.02] p-5">
             <div className="ashqe-mono text-[9px] text-white/35">NEXT MOVE</div>
