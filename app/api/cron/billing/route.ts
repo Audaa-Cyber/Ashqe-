@@ -15,10 +15,8 @@ export async function GET(request:Request){
    const {data:existing}=await admin.from("ashqe_payment_events").select("payment_intent_id").eq("event_key",verified.eventKey).maybeSingle()
    if(existing&&existing.payment_intent_id!==intent.id){await admin.from("ashqe_payment_intents").update({status:"rejected",metadata:{...intent.metadata,rejection:"payment_already_used"}}).eq("id",intent.id);results.push({id:intent.id,status:"rejected"});continue}
    await admin.from("ashqe_payment_events").upsert({payment_intent_id:intent.id,chain,token,tx_hash:verified.txHash,event_key:verified.eventKey,sender_address:verified.sender,recipient_address:intent.recipient,amount_units:verified.amountUnits.toString(),block_number:Number(verified.blockNumber),confirmations:chainConfig(chain).confirmations,verified:true,raw:verified.raw,verified_at:new Date().toISOString()},{onConflict:"event_key"})
-   const now=new Date(),end=new Date(now.getTime()+30*24*60*60*1000)
-   await admin.from("ashqe_payment_intents").update({status:"paid",paid_at:now.toISOString(),tx_hash:verified.txHash,sender_address:verified.sender,block_number:Number(verified.blockNumber),updated_at:now.toISOString()}).eq("id",intent.id)
-   await admin.from("ashqe_subscriptions").update({status:"expired",updated_at:now.toISOString()}).eq("user_id",intent.user_id).eq("status","active")
-   await admin.from("ashqe_subscriptions").insert({user_id:intent.user_id,plan_id:intent.plan_id,status:"active",current_period_start:now.toISOString(),current_period_end:end.toISOString(),payment_intent_id:intent.id,chain,token,tx_hash:verified.txHash})
+   const settled=await admin.rpc("ashqe_settle_payment_intent",{p_intent_id:intent.id,p_user_id:intent.user_id,p_tx_hash:verified.txHash,p_sender_address:verified.sender,p_block_number:Number(verified.blockNumber),p_chain:chain,p_token:token})
+   if(settled.error || settled.data!==true) throw new Error("settlement_failed")
    results.push({id:intent.id,status:"paid"})
   }catch(e){results.push({id:intent.id,status:"error",error:e instanceof Error?e.message:"verification_failed"})}
  }
