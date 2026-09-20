@@ -16,11 +16,16 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   const body = await request.json()
   const name = String(body.name || "").trim(), instruction = String(body.instruction || "").trim()
+  const actionType = ["research","post","reply"].includes(String(body.action_type)) ? String(body.action_type) : "research"
   if (!name || !instruction) return NextResponse.json({ error: "name_and_instruction_required" }, { status: 400 })
   const { data, error } = await supabase.from("ashqe_jobs").insert({
     user_id: user.id, name, instruction, schedule: String(body.schedule || "0 8 * * *"),
     timezone: String(body.timezone || "UTC"), destination: String(body.destination || "app"),
     permission: String(body.permission || "suggest"),
+    action_type: actionType,
+    max_actions_per_run: Math.min(5, Math.max(1, Number(body.max_actions_per_run ?? 1))),
+    require_approval: body.require_approval !== false,
+    config: typeof body.config === "object" && body.config ? body.config : {},
   }).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ job: data })
