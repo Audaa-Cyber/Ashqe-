@@ -92,9 +92,10 @@ export async function GET(request: NextRequest) {
   }
 
   if (!userId) return errRedirect(request, "missing_user_id")
+  const resolvedUserId = userId
 
   const { error: upsertError } = await supabase.from("x_connections").upsert({
-    user_id: userId,
+    user_id: resolvedUserId,
     x_user_id: me.id,
     x_username: me.username,
     x_name: me.name ?? null,
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
       const profile = await analyzeStyle(tweets)
       if (profile) {
         const { error } = await supabase.from("style_profiles").upsert({
-          user_id: userId, tone: profile.tone, length_pref: profile.length_pref, rhythm: profile.rhythm,
+          user_id: resolvedUserId, tone: profile.tone, length_pref: profile.length_pref, rhythm: profile.rhythm,
           topics: profile.topics, signature_phrases: profile.signature_phrases, do_list: profile.do_list,
           dont_list: profile.dont_list, summary: profile.summary, sample_posts: cleanTweets.slice(0, 12),
           posts_analyzed: cleanTweets.length, updated_at: new Date().toISOString(),
