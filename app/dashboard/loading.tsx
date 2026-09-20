@@ -1,1 +1,1 @@
-export default function Loading(){return <main className="min-h-screen bg-background text-foreground p-8"><div className="ashqe-mono text-xs text-[#d9ff4f]">ASHQE / LOADING</div><div className="ashqe-display text-5xl mt-4 animate-pulse">Building your context…</div></main>}
+export default function Loading(){return <main className="min-h-screen bg-background text-foreground p-8"><div className="ashqe-mono text-xs text-[#ffffff]">ASHQE / LOADING</div><div className="ashqe-display text-5xl mt-4 animate-pulse">Building your context…</div></main>}
