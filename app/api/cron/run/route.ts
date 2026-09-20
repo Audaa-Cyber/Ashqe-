@@ -16,15 +16,18 @@ function cronFieldMatches(field:string,value:number){
     return Number(part)===value
   })
 }
-function due(schedule:string,lastRun:string|null){
+function due(schedule:string,lastRun:string|null,timezone:string){
   const parts=schedule.trim().split(/\s+/)
   if(parts.length!==5) return true
   const now=new Date()
   if(lastRun && Date.now()-new Date(lastRun).getTime()<10*60*1000) return false
-  return cronFieldMatches(parts[0],now.getMinutes())&&cronFieldMatches(parts[1],now.getHours())&&cronFieldMatches(parts[2],now.getDate())&&cronFieldMatches(parts[3],now.getMonth()+1)&&cronFieldMatches(parts[4],now.getDay())
+  const partsLocal=new Intl.DateTimeFormat("en-US",{timeZone:timezone,hour12:false,minute:"2-digit",hour:"2-digit",day:"2-digit",month:"2-digit",weekday:"short"}).formatToParts(now)
+  const value=(type:string)=>Number(partsLocal.find(x=>x.type===type)?.value||0)
+  const weekday=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(partsLocal.find(x=>x.type==="weekday")?.value||"Sun")
+  return cronFieldMatches(parts[0],value("minute"))&&cronFieldMatches(parts[1],value("hour")%24)&&cronFieldMatches(parts[2],value("day"))&&cronFieldMatches(parts[3],value("month"))&&cronFieldMatches(parts[4],weekday)
 }
 
-async function sendTelegram(chatId:string,text:string){
+async function searchWeb(query:string){const key=process.env.TAVILY_API_KEY;if(!key)return [];const res=await fetch("https://api.tavily.com/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({api_key:key,query,search_depth:"advanced",max_results:6,include_answer:false}),cache:"no-store"});if(!res.ok)throw new Error("research_provider_failed");const json=await res.json() as {results?:Array<{title?:string;url?:string;content?:string}>};return (json.results||[]).filter(x=>x.url&&x.content).map(x=>({title:x.title||x.url!,url:x.url!,content:x.content!}))}\n\nasync function sendTelegram(chatId:string,text:string){
   const token=process.env.TELEGRAM_BOT_TOKEN
   if(!token)return
   await fetch("https://api.telegram.org/bot"+token+"/sendMessage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text})})
@@ -39,12 +42,12 @@ export async function GET(request:Request){
 
   const results=[]
   for(const job of jobs??[]){
-    if(!due(job.schedule,job.last_run_at))continue
+    if(!due(job.schedule,job.last_run_at,job.timezone||"UTC"))continue
     const {data:run}=await admin.from("ashqe_job_runs").insert({job_id:job.id,user_id:job.user_id,status:"running",attempts:1}).select().single()
     try{
       if(job.action_type==="research"){
         if(!process.env.OPENROUTER_API_KEY)throw new Error("openrouter_not_configured")
-        const {text}=await generateText({model:getChatModel(),prompt:"Act as Ashqe research agent. Produce a concise intelligence brief for this scheduled instruction. Do not invent current facts; clearly label assumptions. Instruction: "+job.instruction,temperature:0.2})
+        const sources=await searchWeb(job.instruction);const evidence=sources.map((s:any,i:number)=>"["+String(i+1)+"] "+s.title+"\n"+s.url+"\n"+s.content).join("\n\n");const {text}=await generateText({model:getChatModel(),prompt:"Act as Ashqe research agent. Synthesize only the supplied evidence. Do not invent current facts. Instruction: "+job.instruction+"\nEvidence:\n"+evidence.slice(0,24000),temperature:0.2})
         await admin.from("ashqe_signals").insert({user_id:job.user_id,type:"scheduled_research",title:job.name,summary:text.slice(0,2000),confidence:60,urgency:3,metadata:{job_id:job.id,instruction:job.instruction}})
         if(job.destination==="telegram"){
           const {data:tg}=await admin.from("ashqe_telegram_connections").select("chat_id").eq("user_id",job.user_id).maybeSingle()
