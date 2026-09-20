@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { getValidAccessToken, postTweet } from "@/lib/x/api"
+import { getValidAccessToken, postTweet, postReply } from "@/lib/x/api"
 import { authorizeAutonomousAction } from "@/lib/execution-policy"
 import { getChatModel } from "@/lib/openrouter"
 import { generateText } from "ai"
@@ -60,7 +60,7 @@ export async function GET(request:Request){
           :"Write one original X post under 280 characters based on this instruction. Make it specific, human and non-templated. Instruction: "+job.instruction
         const {text}=await generateText({model:getChatModel(),prompt,temperature:0.8})
         const clean=text.trim().slice(0,280)
-        const posted=await postTweet(conn.access_token,clean)
+        const posted=job.action_type==="reply" ? await postReply(conn.access_token,clean,String(job.config?.targetId)) : await postTweet(conn.access_token,clean)
         await admin.from("ashqe_action_log").insert({user_id:job.user_id,action_type:job.action_type,target_id:job.config?.targetId??null,content:clean,status:"executed",reason:"scheduled_job",policy_snapshot:authz.policy})
         if(job.destination==="telegram"){
           const {data:tg}=await admin.from("ashqe_telegram_connections").select("chat_id").eq("user_id",job.user_id).maybeSingle()
