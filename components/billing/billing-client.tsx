@@ -1,7 +1,7 @@
 "use client"
 import {useEffect,useState} from "react"
 const plans=[{id:"pro",name:"Pro",price:20,desc:"Research, radar, growth and higher automation limits."},{id:"operator",name:"Operator",price:50,desc:"Full intelligence OS with advanced automation and execution controls."}]
-const rails=[{chain:"solana",label:"Solana",tokens:["USDC","USDT"]},{chain:"base",label:"Base",tokens:["USDC","USDT"]},{chain:"arc",label:"Arc",tokens:["USDC","USDT"]}] as const
+const rails=[{chain:"solana",label:"Solana",tokens:["USDC","USDT"]},{chain:"base",label:"Base",tokens:["USDC","USDT"]},{chain:"arc",label:"Arc",tokens:["USDC"]}] as const
 export default function BillingClient(){
  const [plan,setPlan]=useState("pro"),[chain,setChain]=useState<(typeof rails)[number]["chain"]>("solana"),[token,setToken]=useState("USDC"),[intent,setIntent]=useState<any>(null),[status,setStatus]=useState<any>(null),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false)
  useEffect(()=>{fetch("/api/billing/status").then(r=>r.json()).then(d=>setStatus(d.subscription))},[])
