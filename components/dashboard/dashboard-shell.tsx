@@ -40,8 +40,13 @@ export default function DashboardShell({ user, connection, style, drafts: initia
 
   const runResearch = async () => {
     if (!research.trim()) return
-    const res = await fetch("/api/chat", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ message: `Research this deeply and return sourced findings: ${research}` }) })
-    setResearchResult(res.ok ? "Research request accepted. Results will appear here when the connected AI provider is configured." : "Research request failed. Check your AI configuration.")
+    setResearchResult("Researching…")
+    const res = await fetch("/api/research", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ query: research, depth: "deep" }) })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) { setResearchResult(data.message || "Research failed. Check your AI and research provider configuration."); return }
+    const result = data.result || {}
+    const findings = Array.isArray(result.findings) ? result.findings : []
+    setResearchResult([result.thesis || "Research complete.", ...findings.slice(0,4).map((x:any) => "• " + x.title + ": " + x.summary)].join("\n\n"))
   }
 
   return (
@@ -173,7 +178,7 @@ function Automations(){
           <h3 className="text-2xl mt-2">{policy.autonomous_enabled ? "Ashqe can act for you." : "Ashqe is approval-only."}</h3>
           <p className="text-sm text-muted-foreground mt-2 max-w-xl">Turning this on gives Ashqe permission to execute only the specific action types you enable below. Every action is policy-checked and logged.</p>
         </div>
-        <button onClick={()=>save({...policy,autonomous_enabled:!policy.autonomous_enabled})} disabled={saving} className={policy.autonomous_enabled?"bg-[#d9ff4f] text-black":"bg-white text-black"+" px-6 py-3 font-semibold"}>
+        <button onClick={()=>save({...policy,autonomous_enabled:!policy.autonomous_enabled})} disabled={saving} className={"px-6 py-3 font-semibold " + (policy.autonomous_enabled?"bg-[#d9ff4f] text-black":"bg-white text-black")}>
           {policy.autonomous_enabled ? "ON · Turn off" : "OFF · Turn on"}
         </button>
       </div>
