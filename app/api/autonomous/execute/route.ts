@@ -29,10 +29,10 @@ export async function POST(request:Request){
 
   try{
     const posted=body.actionType==="reply" ? await postReply(conn.access_token,clean,String(body.targetId)) : await postTweet(conn.access_token,clean)
-    await admin.from("ashqe_action_log").insert({user_id:body.userId,action_type:body.actionType,target_id:body.targetId ?? null,content:clean,status:"executed",reason:"autonomous_executor",policy_snapshot:authz.policy})
+    await admin.from("ashqe_action_log").update({content:clean,status:"executed",reason:"autonomous_executor",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
     return NextResponse.json({executed:true,id:posted.id,text:posted.text,url:"https://x.com/"+conn.x_username+"/status/"+posted.id})
   }catch(error){
-    await admin.from("ashqe_action_log").insert({user_id:body.userId,action_type:body.actionType,target_id:body.targetId ?? null,content:clean,status:"failed",reason:error instanceof Error?error.message:"x_action_failed",policy_snapshot:authz.policy})
+    await admin.from("ashqe_action_log").update({content:clean,status:"failed",reason:error instanceof Error?error.message:"x_action_failed",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
     return NextResponse.json({error:"x_action_failed"},{status:502})
   }
 }
