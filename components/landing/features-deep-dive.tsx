@@ -1,10 +1,11 @@
 'use client';
 
+import type { ReactElement } from 'react';
 import { Card } from '@/components/ui/card';
 
 export default function FeaturesDive() {
   const getIcon = (iconName: string) => {
-    const iconMap: { [key: string]: JSX.Element } = {
+    const iconMap: { [key: string]: ReactElement } = {
       voice: (
         <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
