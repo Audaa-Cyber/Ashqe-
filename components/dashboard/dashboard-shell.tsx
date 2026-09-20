@@ -260,7 +260,7 @@ function Memory({style}:{style:StyleProfile|null}){
   const [title,setTitle]=useState(""); const [content,setContent]=useState("")
   const load=()=>fetch("/api/memory").then(r=>r.ok?r.json():null).then(d=>setMemories(d?.memories??[]))
   useEffect(()=>{load()},[])
-  const add=async()=>{if(!title.trim()||!content.trim())return;const r=await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,content,kind:"user",importance:4})});if(r.ok){setTitle("");setContent("");load()}}
+  const add=async()=>{if(!title.trim()||!content.trim())return;const r=await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,content,kind:"fact",importance:4})});if(r.ok){setTitle("");setContent("");load()}}
   return <div><SectionTitle eyebrow="MEMORY" title="Build the model of you." sub="Voice, interests, projects, goals and rules become durable context. You control what Ashqe remembers."/>
     <div className="mt-8 grid lg:grid-cols-2 gap-6">
       <div className="border border-white/10 p-6"><div className="ashqe-mono text-xs text-[#d9ff4f]">VOICE PROFILE</div><p className="mt-5 text-sm text-muted-foreground">{style?.summary || "Your voice profile grows from connected X history."}</p><div className="mt-5 text-xs text-muted-foreground">{style?.posts_analyzed ?? 0} posts analyzed</div></div>
