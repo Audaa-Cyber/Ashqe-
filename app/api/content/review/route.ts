@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!text) return NextResponse.json({ error: "text_required" }, { status: 400 })
 
   const heuristic = scoreAiLikeness(text)
-  let result = heuristic
+  let result: { score: number; flags: string[]; recommendation: "keep" | "review" | "rewrite"; rewrite?: string } = { ...heuristic }
   if (process.env.OPENROUTER_API_KEY) {
     try {
       const { text: modelText } = await generateText({
