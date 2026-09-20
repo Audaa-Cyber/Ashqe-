@@ -38,6 +38,24 @@ export default function DashboardShell({ user, connection, style, drafts: initia
   const [research, setResearch] = useState("")
   const [researchResult, setResearchResult] = useState<string | null>(null)
 
+  useEffect(() => {
+    const readTab = () => {
+      const value = new URLSearchParams(window.location.search).get("tab")
+      if (nav.some(([id]) => id === value)) setTab(value as (typeof nav)[number][0])
+    }
+    readTab()
+    window.addEventListener("popstate", readTab)
+    return () => window.removeEventListener("popstate", readTab)
+  }, [])
+
+  const navigateTab = (id: (typeof nav)[number][0]) => {
+    setTab(id)
+    const url = new URL(window.location.href)
+    if (id === "home") url.searchParams.delete("tab")
+    else url.searchParams.set("tab", id)
+    window.history.pushState({ tab: id }, "", url)
+  }
+
   const runResearch = async () => {
     if (!research.trim()) return
     setResearchResult("Researching…")
@@ -57,7 +75,7 @@ export default function DashboardShell({ user, connection, style, drafts: initia
           <div className="ashqe-mono text-[10px] uppercase tracking-[.2em] text-muted-foreground mb-5">Ashqe / OS</div>
           <nav className="space-y-1">
             {nav.map(([id,label]) => (
-              <button key={id} onClick={() => setTab(id)} className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition ${tab===id ? "bg-white text-black" : "text-muted-foreground hover:bg-white/5 hover:text-white"}`}>
+              <button key={id} onClick={() => navigateTab(id)} className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition ${tab===id ? "bg-white text-black" : "text-muted-foreground hover:bg-white/5 hover:text-white"}`}>
                 {label}
               </button>
             ))}
@@ -74,7 +92,7 @@ export default function DashboardShell({ user, connection, style, drafts: initia
             {nav.map(([id,label]) => <button key={id} onClick={() => setTab(id)} className={`shrink-0 px-3 py-2 rounded-full text-xs ${tab===id ? "bg-white text-black":"bg-white/5 text-muted-foreground"}`}>{label}</button>)}
           </div>
 
-          {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={setTab} />}
+          {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} />}
           {tab === "research" && <Research research={research} setResearch={setResearch} runResearch={runResearch} result={researchResult} />}
           {tab === "radar" && <Radar />}
           {tab === "growth" && <Growth stats={stats} />}
