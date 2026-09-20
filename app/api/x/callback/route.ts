@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     console.error("[x-oauth] recent posts fetch failed", error)
   }
 
-  const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 7200) * 1000).toISOString()
   const cleanTweets = tweets.map((tweet) => ({ id: tweet.id, text: tweet.text, created_at: tweet.created_at ?? null, public_metrics: tweet.public_metrics ?? null }))
 
   const { data: authData } = await supabase.auth.getUser()
