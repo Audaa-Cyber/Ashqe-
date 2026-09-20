@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { refreshAccessToken } from "./oauth"
+import { decryptToken, encryptToken } from "@/lib/security/tokens"
 
 export interface XUser {
   id: string
@@ -41,7 +42,9 @@ export async function getValidAccessToken(supabase: SupabaseClient, userId: stri
   const { data, error } = await supabase.from("x_connections").select("*").eq("user_id", userId).maybeSingle()
 
   if (error || !data) return null
-  const conn = data as XConnection
+  const raw = data as XConnection
+  let conn: XConnection
+  try { conn = { ...raw, access_token: decryptToken(raw.access_token), refresh_token: raw.refresh_token ? decryptToken(raw.refresh_token) : null } } catch { return null }
 
   const expiresAt = conn.expires_at ? new Date(conn.expires_at).getTime() : 0
   const now = Date.now()
@@ -66,8 +69,8 @@ export async function getValidAccessToken(supabase: SupabaseClient, userId: stri
     const { error: updateError } = await supabase
       .from("x_connections")
       .update({
-        access_token: refreshed.access_token,
-        refresh_token: refreshed.refresh_token ?? conn.refresh_token,
+        access_token: encryptToken(refreshed.access_token),
+        refresh_token: refreshed.refresh_token ? encryptToken(refreshed.refresh_token) : (raw.refresh_token ?? null),
         expires_at: newExpires,
         updated_at: new Date().toISOString(),
       })
