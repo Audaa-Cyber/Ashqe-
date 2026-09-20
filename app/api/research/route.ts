@@ -30,6 +30,7 @@ export async function POST(request: Request) {
   const body = await request.json() as { query?: string; niche?: string; depth?: "quick"|"deep" }
   const query = String(body.query ?? "").trim()
   if (!query) return NextResponse.json({ error: "query_required" }, { status: 400 })
+  if (query.length > 500) return NextResponse.json({ error: "query_too_long" }, { status: 422 })
 
   const [web, connection] = await Promise.all([searchWeb(query), getValidAccessToken(supabase, user.id)])
   let xContext: string[] = []
