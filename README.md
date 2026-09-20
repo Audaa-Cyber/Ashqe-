@@ -61,3 +61,10 @@ Vercel Cron calls /api/cron/run every 15 minutes. CRON_SECRET must be configured
 
 ### Safe X diagnostics
 GET /api/x/diagnostics reports only whether required configuration variables exist and what callback URL Ashqe expects. It never returns credentials or tokens.
+
+### Crypto billing
+Ashqe billing is crypto-only: USDC and USDT on Solana and Base, plus Arc where the selected token contract is explicitly configured. Payment requests are short-lived, server-created, and bound to a plan, chain, token, exact amount and receiving wallet. The server verifies the canonical token contract, recipient, successful transaction, exact-or-greater amount, confirmations, replay/idempotency and payment expiry before activating a subscription. A scheduled /api/cron/billing reconciliation job covers users who pay without keeping the checkout page open.
+
+Configure ASHQE_SOLANA_PAYMENT_WALLET, ASHQE_BASE_PAYMENT_WALLET, and ASHQE_ARC_PAYMENT_WALLET. Configure RPC URLs and confirmation policy. Never put wallet private keys in the application. Arc currently has native USDC at 0x3600000000000000000000000000000000000000; an Arc USDT address is intentionally not invented and must be supplied/configured only after you verify the exact token contract you want to accept. Solana native USDC/USDT and Base USDC/USDT are allowlisted in lib/billing/config.ts.
+
+Apply SUPABASE_MIGRATION_0006.sql after migrations 0002–0005. The /billing page creates payment intents and shows the exact network/token/recipient. Access is activated only after server-side onchain verification.
