@@ -7,7 +7,7 @@ export async function GET() {
   if (!user) return NextResponse.json({error:"unauthorized"},{status:401})
   const {data,error}=await supabase.from("ashqe_execution_policy").select("*").eq("user_id",user.id).maybeSingle()
   if(error) return NextResponse.json({error:error.message},{status:500})
-  return NextResponse.json({policy:data ?? {autonomous_enabled:false,autonomous_posts:false,autonomous_replies:false,max_posts_per_day:3,max_replies_per_day:5,require_reply_opt_in:true,require_ai_reply_approval:true}})
+  return NextResponse.json({policy:data ?? {autonomous_enabled:false,autonomous_posts:false,autonomous_replies:false,max_posts_per_day:3,max_replies_per_day:5,allowed_hours_start:8,allowed_hours_end:22,require_reply_opt_in:true,require_ai_reply_approval:true}})
 }
 
 export async function PUT(request:Request) {
