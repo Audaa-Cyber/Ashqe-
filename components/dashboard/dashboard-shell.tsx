@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { UIMessage } from "ai"
 import DashboardHeader from "./dashboard-header"
 import ChatPanel from "./chat-panel"
@@ -126,7 +126,110 @@ function Growth({stats}:{stats:Props["stats"]}){return <div><SectionTitle eyebro
 
 function BD(){return <div><SectionTitle eyebrow="BD ENGINE" title="Turn the network into opportunities." sub="Discover people, projects, communities and partnership angles without turning your account into a spam machine."/><div className="mt-8 grid md:grid-cols-2 gap-px bg-white/10 border border-white/10">{["Potential partner","Founder worth knowing","Community opportunity","Collaboration angle"].map((x,i)=><div className="bg-background p-6 min-h-36" key={x}><div className="ashqe-mono text-[10px] text-muted-foreground">OPPORTUNITY 0{i+1}</div><h3 className="mt-7">{x}</h3><p className="text-xs text-muted-foreground mt-2">Requires live network and research data.</p></div>)}</div></div>}
 
-function Automations(){return <div><SectionTitle eyebrow="AUTOMATIONS" title="Tell Ashqe once. Let it remember." sub="Natural-language scheduled jobs for research, monitoring, briefs and reminders. X actions stay approval-gated by default."/><div className="mt-8 border border-white/10 p-6"><div className="ashqe-mono text-xs text-[#d9ff4f]">EXAMPLE</div><p className="mt-4 text-lg">“Every morning at 8, research what changed in my niches overnight and send me the important findings on Telegram.”</p><div className="mt-6 grid md:grid-cols-4 gap-3 text-xs text-muted-foreground"><span>08:00 daily</span><span>Research + radar</span><span>Telegram</span><span>Suggest only</span></div></div><div className="mt-5 border border-dashed border-white/15 p-6 text-sm text-muted-foreground">Scheduler foundation is ready. Connect CRON_SECRET, Telegram and an AI provider in production to execute jobs.</div></div>}
+function Automations(){
+  const [policy,setPolicy]=useState<any>(null)
+  const [saving,setSaving]=useState(false)
+  const [jobs,setJobs]=useState<any[]>([])
+  const [actions,setActions]=useState<any[]>([])
+  const [name,setName]=useState("")
+  const [instruction,setInstruction]=useState("")
+  const [message,setMessage]=useState("")
+
+  const load=async()=>{
+    const [p,j,a]=await Promise.all([
+      fetch("/api/execution-policy").then(r=>r.ok?r.json():null),
+      fetch("/api/automations").then(r=>r.ok?r.json():null),
+      fetch("/api/action-log").then(r=>r.ok?r.json():null),
+    ])
+    setPolicy(p?.policy ?? {autonomous_enabled:false,autonomous_posts:false,autonomous_replies:false,max_posts_per_day:3,max_replies_per_day:5,allowed_hours_start:8,allowed_hours_end:22,require_reply_opt_in:true,require_ai_reply_approval:true})
+    setJobs(j?.jobs ?? [])
+    setActions(a?.actions ?? [])
+  }
+  useEffect(()=>{load()},[])
+
+  const save=async(next:any)=>{
+    setSaving(true); setMessage("")
+    const res=await fetch("/api/execution-policy",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(next)})
+    const data=await res.json()
+    setPolicy(data.policy ?? next)
+    setSaving(false)
+    setMessage(res.ok?"Autonomous policy saved.":"Could not save policy.")
+  }
+
+  const createJob=async()=>{
+    if(!name.trim()||!instruction.trim()) return
+    const res=await fetch("/api/automations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,instruction,schedule:"0 8 * * *",timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,destination:"app",permission:"suggest",action_type:"research",require_approval:true})})
+    if(res.ok){setName("");setInstruction("");setMessage("Automation created.");load()}else setMessage("Could not create automation.")
+  }
+
+  if(!policy) return <div className="text-sm text-muted-foreground">Loading automation controls…</div>
+  return <div>
+    <SectionTitle eyebrow="AUTOMATIONS" title="Tell Ashqe once. Let it remember." sub="Research, radar, briefs and approved X actions can run on a schedule. Autonomous execution is OFF by default." />
+
+    <div className="mt-8 border border-white/10">
+      <div className="p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 border-b border-white/10">
+        <div>
+          <div className="ashqe-mono text-xs text-[#d9ff4f]">AUTONOMOUS MODE</div>
+          <h3 className="text-2xl mt-2">{policy.autonomous_enabled ? "Ashqe can act for you." : "Ashqe is approval-only."}</h3>
+          <p className="text-sm text-muted-foreground mt-2 max-w-xl">Turning this on gives Ashqe permission to execute only the specific action types you enable below. Every action is policy-checked and logged.</p>
+        </div>
+        <button onClick={()=>save({...policy,autonomous_enabled:!policy.autonomous_enabled})} disabled={saving} className={policy.autonomous_enabled?"bg-[#d9ff4f] text-black":"bg-white text-black"+" px-6 py-3 font-semibold"}>
+          {policy.autonomous_enabled ? "ON · Turn off" : "OFF · Turn on"}
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
+        <PermissionRow title="Autonomous posts" description="Allow scheduled jobs to publish original posts." enabled={policy.autonomous_posts} disabled={!policy.autonomous_enabled} onChange={(v:boolean)=>save({...policy,autonomous_posts:v})}/>
+        <PermissionRow title="Autonomous replies" description="Requires recipient opt-in and X's required AI-reply approval." enabled={policy.autonomous_replies} disabled={!policy.autonomous_enabled} onChange={(v:boolean)=>save({...policy,autonomous_replies:v})}/>
+      </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-white/10">
+        <LimitField label="Posts / day" value={policy.max_posts_per_day} onChange={(v:number)=>setPolicy({...policy,max_posts_per_day:v})}/>
+        <LimitField label="Replies / day" value={policy.max_replies_per_day} onChange={(v:number)=>setPolicy({...policy,max_replies_per_day:v})}/>
+        <LimitField label="Start hour" value={policy.allowed_hours_start} onChange={(v:number)=>setPolicy({...policy,allowed_hours_start:v})}/>
+        <LimitField label="End hour" value={policy.allowed_hours_end} onChange={(v:number)=>setPolicy({...policy,allowed_hours_end:v})}/>
+      </div>
+      <div className="p-4 border-t border-white/10 flex justify-between items-center">
+        <span className="text-xs text-muted-foreground">{message || "Limits are enforced server-side before every autonomous action."}</span>
+        <button onClick={()=>save(policy)} className="text-xs bg-white/10 hover:bg-white/15 px-4 py-2">Save limits</button>
+      </div>
+    </div>
+
+    <div className="mt-6 border border-red-400/20 bg-red-400/[.03] p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div><div className="ashqe-mono text-[10px] text-red-300">EMERGENCY STOP</div><p className="text-sm mt-2">Immediately disable autonomous posts and replies.</p></div>
+      <button onClick={()=>save({...policy,autonomous_enabled:false,autonomous_posts:false,autonomous_replies:false})} className="border border-red-400/30 text-red-200 px-5 py-2 text-sm">Stop all automation</button>
+    </div>
+
+    <div className="mt-8 border border-white/10 p-6">
+      <div className="ashqe-mono text-xs text-[#d9ff4f]">CREATE JOB</div>
+      <div className="grid md:grid-cols-3 gap-3 mt-4">
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Morning radar" className="bg-white/5 border border-white/10 px-4 py-3 outline-none"/>
+        <input value={instruction} onChange={e=>setInstruction(e.target.value)} placeholder="Research what changed in my niches overnight" className="bg-white/5 border border-white/10 px-4 py-3 outline-none md:col-span-1"/>
+        <button onClick={createJob} className="bg-[#d9ff4f] text-black px-5 py-3 font-semibold">Create automation</button>
+      </div>
+    </div>
+
+    <div className="mt-8 grid lg:grid-cols-2 gap-6">
+      <div className="border border-white/10 p-6">
+        <div className="ashqe-mono text-xs text-[#d9ff4f]">SCHEDULED JOBS</div>
+        <div className="mt-5 space-y-3">{jobs.length?jobs.map(j=><div key={j.id} className="border border-white/10 p-4"><div className="font-medium">{j.name}</div><div className="text-xs text-muted-foreground mt-1">{j.instruction}</div><div className="ashqe-mono text-[10px] mt-3 text-muted-foreground">{j.schedule} · {j.destination} · {j.permission}</div></div>):<p className="text-sm text-muted-foreground mt-4">No automations yet.</p>}</div>
+      </div>
+      <div className="border border-white/10 p-6">
+        <div className="ashqe-mono text-xs text-[#d9ff4f]">ACTIVITY LOG</div>
+        <div className="mt-5 space-y-3">{actions.length?actions.slice(0,8).map(a=><div key={a.id} className="border border-white/10 p-4"><div className="flex justify-between"><span className="text-sm">{a.action_type}</span><span className="ashqe-mono text-[10px]">{a.status}</span></div><div className="text-xs text-muted-foreground mt-2">{a.reason}</div></div>):<p className="text-sm text-muted-foreground mt-4">No actions recorded.</p>}</div>
+      </div>
+    </div>
+
+    <div className="mt-5 text-xs text-muted-foreground border-l-2 border-[#d9ff4f] pl-4">Autonomous replies remain disabled unless the account has the required X approval and the interaction satisfies opt-in requirements.</div>
+  </div>
+}
+
+function PermissionRow({title,description,enabled,disabled,onChange}:{title:string;description:string;enabled:boolean;disabled:boolean;onChange:(v:boolean)=>void}){
+ return <div className="p-6 flex items-center justify-between gap-5"><div><div className="font-medium">{title}</div><p className="text-xs text-muted-foreground mt-1 max-w-md">{description}</p></div><button disabled={disabled} onClick={()=>onChange(!enabled)} className={"w-12 h-7 rounded-full p-1 transition "+(enabled?"bg-[#d9ff4f]":"bg-white/10")+" "+(disabled?"opacity-40":"")}><span className={"block w-5 h-5 rounded-full bg-black transition "+(enabled?"translate-x-5":"")}/></button></div>
+}
+function LimitField({label,value,onChange}:{label:string;value:number;onChange:(v:number)=>void}){
+ return <label className="p-4 border-r border-white/10 last:border-r-0"><span className="ashqe-mono text-[10px] text-muted-foreground block">{label}</span><input type="number" min={0} max={20} value={value} onChange={e=>onChange(Number(e.target.value))} className="mt-2 w-full bg-white/5 border border-white/10 px-3 py-2"/></label>
+}
 
 function Memory({style}:{style:StyleProfile|null}){return <div><SectionTitle eyebrow="MEMORY" title="Build the model of you." sub="Voice, interests, projects, goals and rules become durable context for every agent."/><div className="mt-8 grid md:grid-cols-2 gap-4"><div className="border border-white/10 p-6"><div className="ashqe-mono text-xs text-[#d9ff4f]">VOICE</div><p className="mt-5 text-sm text-muted-foreground">{style?.summary || "Your voice profile will grow from your connected X history."}</p></div><div className="border border-white/10 p-6"><div className="ashqe-mono text-xs text-[#d9ff4f]">TOPICS</div><p className="mt-5 text-sm text-muted-foreground">{style?.topics?.join(" · ") || "Add niches and let Ashqe learn what matters."}</p></div></div></div>}
 
