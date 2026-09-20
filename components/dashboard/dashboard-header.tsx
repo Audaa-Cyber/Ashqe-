@@ -69,7 +69,7 @@ export default function DashboardHeader({ user, connection }: Props) {
                 >
                   Sign out
                 </button>
-                <button type="button" onClick={async()=>{if(window.prompt("Type DELETE MY ACCOUNT to permanently delete your Ashqe account and data.")!=="DELETE MY ACCOUNT")return;const r=await fetch("/api/privacy/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE MY ACCOUNT"})});if(r.ok)window.location.href="/";}} className="w-full text-left px-3 py-2 rounded hover:bg-red-500/10 text-red-300">Delete account</button>
+                <button type="button" onClick={async()=>{if(window.prompt("Type DELETE MY ACCOUNT to permanently delete your Ashqe account and data.")!=="DELETE MY ACCOUNT")return;const r=await fetch("/api/privacy/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE MY ACCOUNT"})});if(r.ok)window.location.href="/";}} className="w-full text-left px-3 py-2 rounded hover:bg-white/10 text-white">Delete account</button>
               </div>
             )}
           </div>
