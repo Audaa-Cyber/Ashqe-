@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getChatModel } from "@/lib/openrouter"
 import { buildStyleSystemPrompt } from "@/lib/style-analyzer"
 import { type UIMessage, convertToModelMessages, streamText } from "ai"
+import { buildAgentContext } from "@/lib/agent/context"
 import type { NextRequest } from "next/server"
 
 export const maxDuration = 60
@@ -71,15 +72,19 @@ export async function POST(req: NextRequest) {
 
   const samples = (conn?.recent_posts as { id: string; text: string }[] | null) ?? []
 
+  const agentContext = await buildAgentContext(supabase, user.id, extractText(messages[messages.length - 1]))
+
   const system = buildStyleSystemPrompt({
     username: conn?.x_username ?? null,
     profile: style ?? null,
     samples,
   })
 
+  const intelligenceSystem = system + "\n\nASHQE OPERATING CONTEXT\nUse this context as working memory, not as unquestioned truth. Distinguish evidence from inference. Prefer a concrete next move over generic advice.\n\nDURABLE MEMORY:\n" + agentContext.memory + "\n\nRECENT SIGNALS:\n" + agentContext.signals + "\n\nOPERATING LOOP: Observe → Understand → Suggest → Execute → Learn. Never claim an action was executed unless a tool/API response confirms it.\n"
+
   const result = streamText({
     model: getChatModel(),
-    system,
+    system: intelligenceSystem,
     messages: await convertToModelMessages(messages),
     abortSignal: req.signal,
   })
