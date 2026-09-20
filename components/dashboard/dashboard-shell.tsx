@@ -237,9 +237,9 @@ function Automations(){
       </div>
     </div>
 
-    <div className="mt-6 border border-red-400/20 bg-red-400/[.03] p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div><div className="ashqe-mono text-[10px] text-red-300">EMERGENCY STOP</div><p className="text-sm mt-2">Immediately disable autonomous posts and replies.</p></div>
-      <button onClick={()=>save({...policy,autonomous_enabled:false,autonomous_posts:false,autonomous_replies:false})} className="border border-red-400/30 text-red-200 px-5 py-2 text-sm">Stop all automation</button>
+    <div className="mt-6 border border-white/20 bg-white/[.03] p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div><div className="ashqe-mono text-[10px] text-white">EMERGENCY STOP</div><p className="text-sm mt-2">Immediately disable autonomous posts and replies.</p></div>
+      <button onClick={()=>save({...policy,autonomous_enabled:false,autonomous_posts:false,autonomous_replies:false})} className="border border-white/30 text-white px-5 py-2 text-sm">Stop all automation</button>
     </div>
 
     <div className="mt-8 border border-white/10 p-6">
@@ -284,7 +284,7 @@ function Memory({style}:{style:StyleProfile|null}){
       <div className="border border-white/10 p-6"><div className="ashqe-mono text-xs text-[#ffffff]">VOICE PROFILE</div><p className="mt-5 text-sm text-muted-foreground">{style?.summary || "Your voice profile grows from connected X history."}</p><div className="mt-5 text-xs text-muted-foreground">{style?.posts_analyzed ?? 0} posts analyzed</div></div>
       <div className="border border-white/10 p-6"><div className="ashqe-mono text-xs text-[#ffffff]">ADD MEMORY</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title" className="mt-4 w-full bg-white/5 border border-white/10 px-3 py-2"/><textarea value={content} onChange={e=>setContent(e.target.value)} placeholder="Something Ashqe should remember…" className="mt-2 w-full min-h-24 bg-white/5 border border-white/10 px-3 py-2"/><button onClick={add} className="mt-3 bg-white text-black px-4 py-2 text-sm font-semibold">Save memory</button></div>
     </div>
-    <div className="mt-8 border border-white/10"><div className="p-5 border-b border-white/10 ashqe-mono text-xs text-[#ffffff]">MEMORY BANK</div>{memories.length?memories.map(m=><div key={m.id} className="p-5 border-b border-white/10 last:border-0"><div className="flex justify-between gap-4"><div><div className="font-medium">{m.title}</div><p className="text-sm text-muted-foreground mt-1">{m.content}</p></div><button onClick={async()=>{await fetch("/api/memory?id="+m.id,{method:"DELETE"});load()}} className="text-xs text-red-300">Forget</button></div></div>):<div className="p-6 text-sm text-muted-foreground">No explicit memories yet.</div>}</div>
+    <div className="mt-8 border border-white/10"><div className="p-5 border-b border-white/10 ashqe-mono text-xs text-[#ffffff]">MEMORY BANK</div>{memories.length?memories.map(m=><div key={m.id} className="p-5 border-b border-white/10 last:border-0"><div className="flex justify-between gap-4"><div><div className="font-medium">{m.title}</div><p className="text-sm text-muted-foreground mt-1">{m.content}</p></div><button onClick={async()=>{await fetch("/api/memory?id="+m.id,{method:"DELETE"});load()}} className="text-xs text-white">Forget</button></div></div>):<div className="p-6 text-sm text-muted-foreground">No explicit memories yet.</div>}</div>
   </div>
 }
 
