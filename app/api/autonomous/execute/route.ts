@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { getValidAccessToken, postTweet } from "@/lib/x/api"
+import { getValidAccessToken, postTweet, postReply } from "@/lib/x/api"
 import { authorizeAutonomousAction } from "@/lib/execution-policy"
 import { getChatModel } from "@/lib/openrouter"
 import { generateText } from "ai"
@@ -28,7 +28,7 @@ export async function POST(request:Request){
   if(!clean || clean.length>280) return NextResponse.json({error:"generated_content_invalid"},{status:422})
 
   try{
-    const posted=await postTweet(conn.access_token,clean)
+    const posted=body.actionType==="reply" ? await postReply(conn.access_token,clean,String(body.targetId)) : await postTweet(conn.access_token,clean)
     await admin.from("ashqe_action_log").insert({user_id:body.userId,action_type:body.actionType,target_id:body.targetId ?? null,content:clean,status:"executed",reason:"autonomous_executor",policy_snapshot:authz.policy})
     return NextResponse.json({executed:true,id:posted.id,text:posted.text,url:"https://x.com/"+conn.x_username+"/status/"+posted.id})
   }catch(error){
