@@ -29,7 +29,7 @@ async function verifyEvm(chain:BillingChain,token:BillingToken,recipient:string,
   if(!receipt||receipt.status!=="0x1")continue
   const block=BigInt(log.blockNumber),confirmations=latest>=block?latest-block+1n:0n
   if(confirmations<BigInt(Math.max(1,cfg.confirmations)))continue
-  const eventKey=createHash("sha256").update(chain+":"+log.transactionHash+":"+(log.logIndex??"0")).digest("hex")
+  const eventKey=createHash("sha256").update(chain+":"+log.transactionHash).digest("hex")
   return {txHash:log.transactionHash,sender,amountUnits:amount,blockNumber:block,eventKey,raw:log,scannedTo:end}
  }
  return null
@@ -47,7 +47,7 @@ async function verifySolana(token:BillingToken,recipient:string,expected:bigint)
    const pre=tx.meta.preTokenBalances||[],post=tx.meta.postTokenBalances||[];let received=0n
    for(const p of post){if(p.owner!==recipient||p.mint!==mint)continue;const before=pre.find((x:any)=>x.accountIndex===p.accountIndex)?.uiTokenAmount?.amount||"0";const after=p.uiTokenAmount?.amount||"0";const delta=BigInt(after)-BigInt(before);if(delta>0n)received+=delta}
    if(received<expected)continue
-   const slot=BigInt(tx.slot||0),eventKey=createHash("sha256").update("solana:"+sig.signature+":"+account.pubkey).digest("hex")
+   const slot=BigInt(tx.slot||0),eventKey=createHash("sha256").update("solana:"+sig.signature).digest("hex")
    return {txHash:sig.signature,sender:"unknown",amountUnits:received,blockNumber:slot,eventKey,raw:{signature:sig.signature,account:account.pubkey,slot:tx.slot}}
   }
  }
