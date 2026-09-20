@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { runAshqeAgent } from "@/lib/ashqe/agent"
+import { scoreAiLikeness } from "@/lib/ashqe-agent"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -9,6 +9,5 @@ export async function POST(request: Request) {
   const body = await request.json()
   const instruction = String(body.instruction || "").trim()
   if (!instruction) return NextResponse.json({ error: "instruction_required" }, { status: 400 })
-  const result = await runAshqeAgent({ instruction, context: String(body.context || "") })
-  return NextResponse.json(result)
+  return NextResponse.json({ ...scoreAiLikeness(instruction), mode: "foundation" })
 }
