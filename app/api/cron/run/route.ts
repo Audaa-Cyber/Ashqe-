@@ -116,6 +116,7 @@ export async function GET(request: Request) {
       .select()
       .single()
 
+    let reservationId: string | null = null
     try {
       if (job.action_type === "research") {
         if (!process.env.OPENROUTER_API_KEY) throw new Error("openrouter_not_configured")
@@ -162,6 +163,7 @@ export async function GET(request: Request) {
           timezone: job.timezone || "UTC",
         })
         if (!authz.allowed) throw new Error("blocked:" + authz.reason)
+        reservationId = authz.reservationId
 
         const conn = await getValidAccessToken(admin, job.user_id)
         if (!conn) throw new Error("x_not_connected")
@@ -216,6 +218,7 @@ export async function GET(request: Request) {
       await admin.from("ashqe_jobs").update({ last_run_at: new Date().toISOString() }).eq("id", job.id)
       results.push({ id: job.id, status: "succeeded" })
     } catch (error) {
+      if (reservationId) await admin.from("ashqe_action_log").update({status:"failed",reason:"scheduled_job_failed"}).eq("id",reservationId).eq("user_id",job.user_id)
       const message = error instanceof Error ? error.message : "job_failed"
       await admin
         .from("ashqe_job_runs")
