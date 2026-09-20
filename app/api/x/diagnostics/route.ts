@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
-export async function GET(request:Request){
+export async function GET(request:NextRequest){
   const origin=request.nextUrl.origin
   const expected=origin+"/api/x/callback"
   return NextResponse.json({
