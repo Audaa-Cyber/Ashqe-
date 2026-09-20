@@ -5,6 +5,7 @@ import { fetchRecentTweets, fetchXMe } from "@/lib/x/api"
 import { exchangeCodeForToken } from "@/lib/x/oauth"
 import { analyzeStyle } from "@/lib/style-analyzer"
 import { type NextRequest, NextResponse } from "next/server"
+import { encryptToken } from "@/lib/security/tokens"
 
 export const maxDuration = 60
 export const dynamic = "force-dynamic"
@@ -97,8 +98,8 @@ export async function GET(request: NextRequest) {
     x_username: me.username,
     x_name: me.name ?? null,
     x_avatar_url: me.profile_image_url ?? null,
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token ?? null,
+    access_token: encryptToken(tokens.access_token),
+    refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
     expires_at: expiresAt,
     scope: tokens.scope ?? null,
     recent_posts: cleanTweets,
