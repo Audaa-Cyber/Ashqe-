@@ -19,7 +19,8 @@ export default function DashboardHeader({ user, connection }: Props) {
           <Link href="/" className="text-xl font-bold tracking-tight">
             Ashqe
           </Link>
-          <Link href="/billing" className="hidden sm:inline text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors">Billing</Link>\n          <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-secondary text-foreground font-medium">
+          <Link href="/billing" className="hidden sm:inline text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors">Billing</Link>
+          <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-secondary text-foreground font-medium">
             Dashboard
           </span>
         </div>
