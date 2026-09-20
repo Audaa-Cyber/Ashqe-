@@ -68,3 +68,7 @@ Ashqe billing is crypto-only: USDC and USDT on Solana and Base, plus Arc where t
 Configure ASHQE_SOLANA_PAYMENT_WALLET, ASHQE_BASE_PAYMENT_WALLET, and ASHQE_ARC_PAYMENT_WALLET. Configure RPC URLs and confirmation policy. Never put wallet private keys in the application. Arc currently has native USDC at 0x3600000000000000000000000000000000000000; an Arc USDT address is intentionally not invented and must be supplied/configured only after you verify the exact token contract you want to accept. Solana native USDC/USDT and Base USDC/USDT are allowlisted in lib/billing/config.ts.
 
 Apply SUPABASE_MIGRATION_0006.sql after migrations 0002–0005. The /billing page creates payment intents and shows the exact network/token/recipient. Access is activated only after server-side onchain verification.
+
+
+### Scheduler on Vercel Hobby
+Vercel Hobby permits at most one cron invocation per day. Ashqe therefore treats scheduled automations as once-per-day on Hobby and preserves calendar constraints instead of claiming minute-level execution. Sub-daily automation requires a deployment tier or external scheduler that supports the required cadence. Crypto payment intents remain valid long enough for the daily reconciliation job, while users can always trigger server-side verification from the billing page.
