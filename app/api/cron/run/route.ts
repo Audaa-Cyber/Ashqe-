@@ -159,6 +159,7 @@ export async function GET(request: Request) {
           targetId: job.config?.targetId,
           recipientOptedIn: Boolean(job.config?.recipientOptedIn),
           aiReplyApproved: Boolean(job.config?.aiReplyApproved),
+          timezone: job.timezone || "UTC",
         })
         if (!authz.allowed) throw new Error("blocked:" + authz.reason)
 
@@ -182,15 +183,7 @@ export async function GET(request: Request) {
             ? await postReply(conn.access_token, clean, String(job.config?.targetId))
             : await postTweet(conn.access_token, clean)
 
-        await admin.from("ashqe_action_log").insert({
-          user_id: job.user_id,
-          action_type: job.action_type,
-          target_id: job.config?.targetId ?? null,
-          content: clean,
-          status: "executed",
-          reason: "scheduled_job",
-          policy_snapshot: authz.policy,
-        })
+        await admin.from("ashqe_action_log").update({ content: clean, status: "executed", reason: "scheduled_job", policy_snapshot: authz.policy }).eq("id", authz.reservationId).eq("user_id", job.user_id)
 
         if (job.destination === "telegram") {
           const { data: tg } = await admin
