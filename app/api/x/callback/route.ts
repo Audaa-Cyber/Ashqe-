@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     x_username: me.username,
     x_name: me.name ?? null,
     x_avatar_url: me.profile_image_url ?? null,
-    access_token: encryptToken(tokens.access_token),
+    access_token: encryptToken(tokens.access_token as string),
     refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
     expires_at: expiresAt,
     scope: tokens.scope ?? null,
