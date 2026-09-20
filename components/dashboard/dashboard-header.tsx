@@ -56,6 +56,7 @@ export default function DashboardHeader({ user, connection }: Props) {
                   <p className="text-xs text-muted-foreground">Signed in as</p>
                   <p className="font-medium truncate">{user.email}</p>
                 </div>
+                <Link href="/api/privacy/export" className="block px-3 py-2 rounded hover:bg-secondary">Export data</Link>
                 <button
                   type="button"
                   onClick={async () => {
