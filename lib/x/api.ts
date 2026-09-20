@@ -13,6 +13,7 @@ export interface XTweet {
   id: string
   text: string
   created_at?: string
+  author_id?: string
   public_metrics?: {
     retweet_count: number
     reply_count: number
