@@ -18,14 +18,14 @@ export async function POST(request:Request){
   if(!authz.allowed) return NextResponse.json({executed:false,blocked:true,reason:authz.reason})
 
   const conn=await getValidAccessToken(admin,body.userId)
-  if(!conn) return NextResponse.json({error:"x_not_connected"},{status:400})
+  if(!conn) { await admin.from("ashqe_action_log").update({status:"failed",reason:"x_not_connected"}).eq("id",authz.reservationId); return NextResponse.json({error:"x_not_connected"},{status:400}) }
 
   const prompt=body.actionType==="reply"
     ? "Write one concise, genuinely human X reply to this interaction. Never use generic AI praise, hashtags unless clearly natural, or fake enthusiasm. Reply only to the supplied interaction. User instruction: " + body.instruction + "\nInteraction:\n" + (body.targetText ?? "")
     : "Write one original X post under 280 characters. It must sound like a specific human with an actual observation, not an AI content template. No generic hook, no engagement bait. User instruction: " + body.instruction
   const {text}=await generateText({model:getChatModel(),prompt,temperature:0.8})
   const clean=text.trim().replace(/^["']|["']$/g,"")
-  if(!clean || clean.length>280) return NextResponse.json({error:"generated_content_invalid"},{status:422})
+  if(!clean || clean.length>280) { await admin.from("ashqe_action_log").update({status:"failed",reason:"generated_content_invalid"}).eq("id",authz.reservationId); return NextResponse.json({error:"generated_content_invalid"},{status:422}) }
 
   try{
     const posted=body.actionType==="reply" ? await postReply(conn.access_token,clean,String(body.targetId)) : await postTweet(conn.access_token,clean)
