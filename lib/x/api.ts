@@ -163,3 +163,8 @@ export async function searchRecentTweets(accessToken: string, query: string, max
   const json = await res.json() as { data?: XTweet[] }
   return json.data ?? []
 }
+
+export async function fetchRecentMentions(accessToken:string,xUserId:string,max=50):Promise<XTweet[]>{
+ const url=new URL("https://api.twitter.com/2/users/"+xUserId+"/mentions");url.searchParams.set("max_results",String(Math.min(Math.max(max,5),100)));url.searchParams.set("tweet.fields","text,created_at,public_metrics,author_id,conversation_id,referenced_tweets");
+ const res=await fetch(url.toString(),{headers:{Authorization:"Bearer "+accessToken},cache:"no-store"});if(!res.ok)throw new Error("X mentions fetch failed ("+res.status+"): "+await res.text());const json=await res.json() as {data?:XTweet[]};return json.data||[]
+}
