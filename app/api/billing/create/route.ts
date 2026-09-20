@@ -9,7 +9,7 @@ export async function POST(request:Request){
  if(typeof body.chain!=="string"||!chains.has(body.chain)||typeof body.token!=="string"||!tokens.has(body.token))return NextResponse.json({error:"unsupported_chain_or_token"},{status:400})
  const chain=body.chain as BillingChain,token=body.token as BillingToken,cfg=chainConfig(chain),recipient=cfg.wallet,contract=tokenAddress(chain,token)
  if(!recipient||!contract)return NextResponse.json({error:"payment_rail_not_configured",message:"This payment rail is not configured yet."},{status:503})
- const units=amountToUnits(plan.monthlyUsd),expires=new Date(Date.now()+30*60*1000).toISOString()
+ const units=amountToUnits(plan.monthlyUsd),expires=new Date(Date.now()+26*60*60*1000).toISOString()
  let startBlock=0; if(chain!=="solana")startBlock=Number(await currentEvmBlock(chain))
  const {data,error}=await supabase.from("ashqe_payment_intents").insert({user_id:user.id,plan_id:plan.id,chain,token,amount_usd:plan.monthlyUsd,amount_units:units.toString(),recipient,status:"pending",expires_at:expires,last_scanned_block:startBlock,metadata:{token_contract:contract,decimals:decimals(chain,token)}}).select("*").single()
  if(error)return NextResponse.json({error:error.message},{status:500})
