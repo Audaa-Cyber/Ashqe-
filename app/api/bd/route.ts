@@ -9,9 +9,10 @@ export async function POST(request:Request){
   const supabase=await createClient()
   const {data:{user}}=await supabase.auth.getUser()
   if(!user)return NextResponse.json({error:"unauthorized"},{status:401})
-  const body=await request.json()
+  const body=await request.json().catch(()=>({}))
   const query=String(body.query||"").trim()
   if(!query)return NextResponse.json({error:"query_required"},{status:400})
+  if(query.length>500)return NextResponse.json({error:"query_too_long"},{status:422})
   const key=process.env.TAVILY_API_KEY
   if(!key||!process.env.OPENROUTER_API_KEY)return NextResponse.json({error:"bd_providers_not_configured"},{status:503})
   const search=await fetch("https://api.tavily.com/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({api_key:key,query,max_results:8,search_depth:"advanced"}),cache:"no-store"})
