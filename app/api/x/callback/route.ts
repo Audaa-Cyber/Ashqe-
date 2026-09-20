@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       const admin = createAdminClient()
       const email = "x_" + me.id + "@auth.ashqe.local"
       const password = randomBytes(48).toString("base64url")
-      const { data: existingConnection } = await supabase.from("x_connections").select("user_id").eq("x_user_id", me.id).maybeSingle()
+      const { data: existingConnection } = await admin.from("x_connections").select("user_id").eq("x_user_id", me.id).maybeSingle()
 
       if (existingConnection?.user_id) {
         userId = existingConnection.user_id
