@@ -94,7 +94,12 @@ export async function GET(request: NextRequest) {
   if (!userId) return errRedirect(request, "missing_user_id")
   const resolvedUserId = userId
 
-  const { error: upsertError } = await supabase.from("x_connections").upsert({
+  // Persist the OAuth connection with the service-role client. The callback may have just
+  // created a Supabase session, but that session cookie is not guaranteed to be
+  // available to the server client until the next request. Using the admin client
+  // here avoids an RLS/session-timing failure while keeping RLS enabled everywhere else.
+  const admin = createAdminClient()
+  const connectionPayload = {
     user_id: resolvedUserId,
     x_user_id: me.id,
     x_username: me.username,
@@ -106,15 +111,43 @@ export async function GET(request: NextRequest) {
     scope: tokens.scope ?? null,
     recent_posts: cleanTweets,
     updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" })
+  }
 
-  if (upsertError) return errRedirect(request, "db_upsert_failed")
+  const { data: existingUserConnection, error: lookupError } = await admin
+    .from("x_connections")
+    .select("user_id")
+    .eq("user_id", resolvedUserId)
+    .maybeSingle()
+
+  if (lookupError) {
+    console.error("[x-oauth] connection lookup failed", {
+      code: lookupError.code,
+      message: lookupError.message,
+      details: lookupError.details,
+      hint: lookupError.hint,
+    })
+    return errRedirect(request, "db_connection_lookup_failed")
+  }
+
+  const { error: connectionWriteError } = existingUserConnection
+    ? await admin.from("x_connections").update(connectionPayload).eq("user_id", resolvedUserId)
+    : await admin.from("x_connections").insert(connectionPayload)
+
+  if (connectionWriteError) {
+    console.error("[x-oauth] connection write failed", {
+      code: connectionWriteError.code,
+      message: connectionWriteError.message,
+      details: connectionWriteError.details,
+      hint: connectionWriteError.hint,
+    })
+    return errRedirect(request, "db_upsert_failed")
+  }
 
   if (tweets.length > 0) {
     try {
       const profile = await analyzeStyle(tweets)
       if (profile) {
-        const { error } = await supabase.from("style_profiles").upsert({
+        const { error } = await admin.from("style_profiles").upsert({
           user_id: resolvedUserId, tone: profile.tone, length_pref: profile.length_pref, rhythm: profile.rhythm,
           topics: profile.topics, signature_phrases: profile.signature_phrases, do_list: profile.do_list,
           dont_list: profile.dont_list, summary: profile.summary, sample_posts: cleanTweets.slice(0, 12),
