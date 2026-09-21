@@ -45,7 +45,7 @@ Copy .env.example into the deployment environment. Never expose server secrets t
 Set a strong random X_TOKEN_ENCRYPTION_KEY so X access/refresh tokens are encrypted at rest. Existing unencrypted tokens remain readable for migration; newly issued and refreshed tokens are encrypted.
 
 ### Database migrations
-Run, in order, SUPABASE_MIGRATION_0002.sql, SUPABASE_MIGRATION_0003.sql, SUPABASE_MIGRATION_0004.sql, and SUPABASE_MIGRATION_0005.sql in Supabase.
+Run, in order, SUPABASE_MIGRATION_0002.sql, SUPABASE_MIGRATION_0003.sql, SUPABASE_MIGRATION_0004.sql, SUPABASE_MIGRATION_0005.sql, and SUPABASE_MIGRATION_0008.sql in Supabase.
 
 ### Research
 Set TAVILY_API_KEY for live web research. Ashqe stores research findings as signals with source URLs. OPENROUTER_API_KEY is required for synthesis and agent execution.
