@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { analyzeStyle } from "@/lib/style-analyzer"
-import type { XTweet } from "@/lib/x/api"
+import { fetchRecentTweets, getValidAccessToken } from "@/lib/x/api"
 import { NextResponse } from "next/server"
 
 export const maxDuration = 60
@@ -21,7 +21,19 @@ export async function POST() {
     return NextResponse.json({ error: "x_not_connected" }, { status: 400 })
   }
 
-  const tweets = (Array.isArray(connection.recent_posts) ? connection.recent_posts : []) as XTweet[]
+  const conn = await getValidAccessToken(supabase, user.id)
+  if (!conn) return NextResponse.json({ error: "x_token_unavailable" }, { status: 400 })
+
+  let tweets
+  try {
+    tweets = await fetchRecentTweets(conn.access_token, conn.x_user_id, 100)
+  } catch (error) {
+    console.error("[onboarding/clone] X history fetch failed", error)
+    return NextResponse.json({ error: "x_history_failed" }, { status: 502 })
+  }
+
+  await supabase.from("x_connections").update({ recent_posts: tweets.map((tweet) => ({ id: tweet.id, text: tweet.text, created_at: tweet.created_at ?? null, public_metrics: tweet.public_metrics ?? null })) }).eq("user_id", user.id)
+
   if (!tweets.length) {
     return NextResponse.json({
       ok: true,
