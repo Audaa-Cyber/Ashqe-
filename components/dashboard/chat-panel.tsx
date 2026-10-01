@@ -4,7 +4,6 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import type { Draft } from "./drafts-grid"
 import { toast } from "sonner"
 
@@ -108,7 +107,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
   }
 
   return (
-    <Card className="p-6 md:p-8 border-border bg-background space-y-5 h-full flex flex-col min-h-[560px]">
+    <section className="p-6 md:p-8 border border-border bg-background space-y-5 h-full flex flex-col min-h-[560px]">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold">Chat with your agent</h2>
@@ -223,6 +222,6 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
           )}
         </div>
       </form>
-    </Card>
+    </section>
   )
 }
