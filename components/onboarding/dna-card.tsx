@@ -14,6 +14,8 @@ export interface DnaProfile {
   dont_list: string[] | null
   summary: string | null
   posts_analyzed: number | null
+  updated_at?: string | null
+  version?: string | null
 }
 
 function esc(value: string) {
@@ -87,20 +89,31 @@ export default function DnaCard({ profile, compact = false }: { profile: DnaProf
 
     ctx.fillStyle = "rgba(255,255,255,.32)"
     ctx.font = "600 16px monospace"
-    ctx.fillText("SIGNATURE PHRASES", 82, 745)
+    ctx.fillText("SIGNATURE PHRASES", 82, 690)
     ctx.fillStyle = "#ffffff"
-    ctx.font = "500 22px Arial"
-    ctx.fillText((profile.signature_phrases || []).slice(0, 5).join("  ·  ") || "Still learning", 82, 785)
+    ctx.font = "500 21px Arial"
+    lines((profile.signature_phrases || []).slice(0, 5).join("  ·  ") || "Still learning", 5).forEach((line, i) => ctx.fillText(line, 82, 728 + i * 28))
+
+    ctx.fillStyle = "rgba(255,255,255,.32)"
+    ctx.font = "600 16px monospace"
+    ctx.fillText("TOPICS", 82, 855)
+    ctx.fillStyle = "#ffffff"
+    ctx.font = "500 18px Arial"
+    lines((profile.topics || []).slice(0, 6).join("  ·  ") || "Still learning", 2).forEach((line, i) => ctx.fillText(line, 82, 885 + i * 25))
 
     ctx.fillStyle = "rgba(255,255,255,.35)"
-    ctx.font = "500 16px monospace"
-    ctx.fillText((profile.posts_analyzed || 0) + " POSTS ANALYZED", 82, 888)
-    ctx.fillText("ASHQE / YOUR DNA / " + new Date().getFullYear(), 1120, 888)
+    ctx.font = "500 14px monospace"
+    ctx.fillText((profile.posts_analyzed || 0) + " POSTS ANALYZED", 1120, 900)
+    ctx.fillText("ASHQE / DNA " + (profile.version || "1.0") + " / " + new Date(profile.updated_at || Date.now()).toLocaleDateString(), 1120, 928)
 
-    const link = document.createElement("a")
-    link.download = "ashqe-voice-dna.png"
-    link.href = canvas.toDataURL("image/png")
-    link.click()
+    try {
+      const link = document.createElement("a")
+      link.download = "ashqe-voice-dna.png"
+      link.href = canvas.toDataURL("image/png")
+      link.click()
+    } catch (error) {
+      console.error("[dna-card] export failed", error)
+    }
   }, [profile])
 
   return (
@@ -141,18 +154,39 @@ export default function DnaCard({ profile, compact = false }: { profile: DnaProf
             <p className="mt-3 max-w-3xl text-sm sm:text-base leading-7 text-white/75">{profile.summary || "Ashqe is still learning your voice."}</p>
           </div>
 
-          <div className="mt-5 border border-white/10 p-5">
-            <div className="ashqe-mono text-[9px] text-white/30">SIGNATURE PHRASES</div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(profile.signature_phrases || []).slice(0, 6).map((phrase) => (
-                <span key={phrase} className="border border-white/15 px-3 py-2 text-xs">{phrase}</span>
-              ))}
+          <div className="mt-5 grid md:grid-cols-3 border border-white/10 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            <div className="p-5 md:col-span-2">
+              <div className="ashqe-mono text-[9px] text-white/30">SIGNATURE PHRASES</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(profile.signature_phrases || []).slice(0, 6).map((phrase) => (
+                  <span key={phrase} className="border border-white/15 px-3 py-2 text-xs">{phrase}</span>
+                ))}
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="ashqe-mono text-[9px] text-white/30">TOPICS</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(profile.topics || []).slice(0, 6).map((topic) => (
+                  <span key={topic} className="border border-white/15 px-3 py-2 text-xs">{topic}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid md:grid-cols-2 border border-white/10 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            <div className="p-5">
+              <div className="ashqe-mono text-[9px] text-white/30">DO</div>
+              <p className="mt-3 text-sm leading-6 text-white/65">{(profile.do_list || []).slice(0, 5).join(" · ") || "Still learning"}</p>
+            </div>
+            <div className="p-5">
+              <div className="ashqe-mono text-[9px] text-white/30">DON’T</div>
+              <p className="mt-3 text-sm leading-6 text-white/65">{(profile.dont_list || []).slice(0, 5).join(" · ") || "Still learning"}</p>
             </div>
           </div>
 
           <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="ashqe-mono text-[9px] text-white/25">BUILT BY ASHQE / YOUR VOICE, YOUR DATA</div>
-            <button onClick={download} className="bg-white text-black px-5 py-3 text-xs font-bold tracking-wide">
+            <button onClick={download} aria-label="Download your Ashqe Voice DNA card as a PNG" className="bg-white text-black px-5 py-3 text-xs font-bold tracking-wide">
               Download DNA card
             </button>
           </div>
