@@ -229,7 +229,7 @@ export default function OnboardingFlow({
 
             {conversationStep === 0 && (
               <div className="mt-12 max-w-3xl">
-                <AshqeLine>Hey{name ? `, ${name}` : ""}. I’m Ashqe.</AshqeLine>
+                <AshqeLine>{`Hey${name ? `, ${name}` : ""}. I’m Ashqe.`}</AshqeLine>
                 <div className="mt-3"><AshqeLine delay={700}>I’ve been through your X history. I have a first read on your voice.</AshqeLine></div>
                 <div className="mt-3"><AshqeLine delay={1500}>Now I want to understand what you’re actually trying to build here.</AshqeLine></div>
 
