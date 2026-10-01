@@ -30,7 +30,7 @@ export default function DashboardHeader({ user, connection }: Props) {
             href={`https://x.com/${connection.username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border hover:bg-secondary/70 transition-colors"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-secondary border border-border hover:bg-secondary/70 transition-colors"
           >
             <span className="w-2 h-2 rounded-full bg-foreground" aria-hidden />
             <span className="text-xs font-medium">@{connection.username}</span>
@@ -65,11 +65,11 @@ export default function DashboardHeader({ user, connection }: Props) {
                       window.location.href = "/"
                     }
                   }}
-                  className="w-full text-left px-3 py-2 rounded hover:bg-secondary text-destructive"
+                  className="w-full text-left px-3 py-2 hover:bg-secondary text-destructive"
                 >
                   Sign out
                 </button>
-                <button type="button" onClick={async()=>{if(window.prompt("Type DELETE MY ACCOUNT to permanently delete your Ashqe account and data.")!=="DELETE MY ACCOUNT")return;const r=await fetch("/api/privacy/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE MY ACCOUNT"})});if(r.ok)window.location.href="/";}} className="w-full text-left px-3 py-2 rounded hover:bg-white/10 text-white">Delete account</button>
+                <button type="button" onClick={async()=>{if(window.prompt("Type DELETE MY ACCOUNT to permanently delete your Ashqe account and data.")!=="DELETE MY ACCOUNT")return;const r=await fetch("/api/privacy/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE MY ACCOUNT"})});if(r.ok)window.location.href="/";}} className="w-full text-left px-3 py-2 hover:bg-white/10 text-white">Delete account</button>
               </div>
             )}
           </div>
