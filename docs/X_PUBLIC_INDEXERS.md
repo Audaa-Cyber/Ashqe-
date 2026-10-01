@@ -9,6 +9,13 @@ The implementation lives in:
 
 ## Supported providers
 
+### FxTwitter / FxEmbed
+No Ashqe API key is required.
+
+FxTwitter is the X/Twitter public API exposed by the open-source FxEmbed project. Its current API v2 exposes search, posts, threads, conversations, profiles, followers/following, quotes, reposts, trends and typeahead. Ashqe uses its public `/2/search` surface as the zero-configuration discovery path, with cursor pagination. FxEmbed documents a 1,000-request/minute API-v2 limit per IP; availability and upstream coverage can still change.
+
+This provider is deliberately read-only. Ashqe does **not** send X auth cookies, `auth_token`, `ct0`, or OAuth credentials to FxTwitter.
+
 ### TwexAPI
 Runtime secret: `TWEXAPI_API_KEY`
 
