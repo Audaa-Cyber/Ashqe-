@@ -17,12 +17,10 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
-  const goals = Array.isArray(body.goals)
-    ? body.goals.filter((x: unknown): x is string => typeof x === "string" && !!x.trim()).slice(0, 5)
-    : []
-  const topics = Array.isArray(body.topics)
-    ? body.topics.filter((x: unknown): x is string => typeof x === "string" && x.trim()).slice(0, 20)
-    : []
+  const goalValues: unknown[] = Array.isArray(body.goals) ? body.goals : []
+  const topicValues: unknown[] = Array.isArray(body.topics) ? body.topics : []
+  const goals = goalValues.filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 5)
+  const topics = topicValues.filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 20)
   const autonomy =
     typeof body.autonomy === "string" && allowedAutonomy.has(body.autonomy)
       ? body.autonomy
