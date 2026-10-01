@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Menu, X, Command, Search, Radar as RadarIcon, TrendingUp, Users, PenLine, Clock3, Brain } from "lucide-react"
 import type { UIMessage } from "ai"
 import DashboardHeader from "./dashboard-header"
 import ChatPanel from "./chat-panel"
@@ -22,18 +23,16 @@ interface Props {
 }
 
 const nav = [
-  ["home","Command"],
-  ["research","Research"],
-  ["radar","Radar"],
-  ["growth","Growth"],
-  ["bd","BD"],
-  ["studio","Studio"],
-  ["automations","Automations"],
-  ["memory","Memory"],
+  { group: "COMMAND", items: [["home","Command",Command]] },
+  { group: "INTELLIGENCE", items: [["research","Research",Search],["radar","Radar",RadarIcon],["growth","Growth",TrendingUp],["bd","BD",Users]] },
+  { group: "WORKSPACE", items: [["studio","Studio",PenLine],["automations","Automations",Clock3],["memory","Memory",Brain]] },
 ] as const
+const flatNav = nav.flatMap(group => group.items)
+type TabId = (typeof flatNav)[number][0]
 
 export default function DashboardShell({ user, connection, style, drafts: initialDrafts, initialMessages, sessionId, stats }: Props) {
-  const [tab, setTab] = useState<(typeof nav)[number][0]>("home")
+  const [tab, setTab] = useState<TabId>("home")
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [drafts, setDrafts] = useState<Draft[]>(initialDrafts)
   const [research, setResearch] = useState("")
   const [researchResult, setResearchResult] = useState<string | null>(null)
@@ -41,15 +40,16 @@ export default function DashboardShell({ user, connection, style, drafts: initia
   useEffect(() => {
     const readTab = () => {
       const value = new URLSearchParams(window.location.search).get("tab")
-      if (nav.some(([id]) => id === value)) setTab(value as (typeof nav)[number][0])
+      if (flatNav.some(([id]) => id === value)) setTab(value as TabId)
     }
     readTab()
     window.addEventListener("popstate", readTab)
     return () => window.removeEventListener("popstate", readTab)
   }, [])
 
-  const navigateTab = (id: (typeof nav)[number][0]) => {
+  const navigateTab = (id: TabId) => {
     setTab(id)
+    setMobileNavOpen(false)
     const url = new URL(window.location.href)
     if (id === "home") url.searchParams.delete("tab")
     else url.searchParams.set("tab", id)
@@ -71,25 +71,62 @@ export default function DashboardShell({ user, connection, style, drafts: initia
     <main className="min-h-screen bg-background text-foreground">
       <DashboardHeader user={user} connection={connection} />
       <div className="mx-auto flex max-w-[1500px] min-h-[calc(100vh-65px)]">
-        <aside className="hidden md:block w-60 shrink-0 border-r border-white/10 p-5">
-          <div className="ashqe-mono text-[10px] uppercase tracking-[.2em] text-muted-foreground mb-5">Ashqe / OS</div>
-          <nav className="space-y-1">
-            {nav.map(([id,label]) => (
-              <button key={id} onClick={() => navigateTab(id)} className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition ${tab===id ? "bg-white text-black" : "text-muted-foreground hover:bg-white/5 hover:text-white"}`}>
-                {label}
-              </button>
+        <aside className="hidden md:flex w-64 shrink-0 border-r border-white/10 flex-col sticky top-[65px] h-[calc(100vh-65px)]">
+          <div className="p-5 border-b border-white/10">
+            <div className="ashqe-mono text-[10px] uppercase tracking-[.2em] text-muted-foreground">Ashqe / OS</div>
+            <div className="mt-2 text-xs text-white/45">Personal X intelligence</div>
+          </div>
+          <nav className="flex-1 overflow-y-auto p-3">
+            {nav.map(group => (
+              <div key={group.group} className="mb-6 last:mb-0">
+                <div className="ashqe-mono px-3 mb-2 text-[9px] tracking-[.18em] text-white/30">{group.group}</div>
+                <div className="space-y-px">
+                  {group.items.map(([id,label,Icon]) => (
+                    <button key={id} onClick={() => navigateTab(id)} className={`w-full flex items-center gap-3 text-left px-3 py-2.5 text-sm transition border-l-2 ${tab===id ? "bg-white/10 text-white border-white" : "text-muted-foreground border-transparent hover:bg-white/5 hover:text-white"}`}>
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
-          <div className="mt-10 border-t border-white/10 pt-5">
-            <div className="ashqe-mono text-[10px] uppercase tracking-widest text-muted-foreground">Connected</div>
-            <div className="mt-2 text-sm">@{connection.username}</div>
+          <div className="border-t border-white/10 p-4">
+            <div className="ashqe-mono text-[9px] uppercase tracking-widest text-muted-foreground">Connected</div>
+            <div className="mt-2 text-sm truncate">@{connection.username}</div>
             <div className="text-xs text-muted-foreground">X account</div>
           </div>
         </aside>
 
-        <section className="flex-1 min-w-0 p-5 md:p-9">
-          <div className="md:hidden flex gap-2 overflow-x-auto pb-5">
-            {nav.map(([id,label]) => <button key={id} onClick={() => setTab(id)} className={`shrink-0 px-3 py-2 rounded-full text-xs ${tab===id ? "bg-white text-black":"bg-white/5 text-muted-foreground"}`}>{label}</button>)}
+        {mobileNavOpen && (
+          <div className="md:hidden fixed inset-0 z-50 bg-black/60" onClick={() => setMobileNavOpen(false)}>
+            <aside className="h-full w-[min(86vw,320px)] bg-background border-r border-white/10" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-5 border-b border-white/10">
+                <div><div className="ashqe-mono text-[10px] tracking-[.2em]">ASHQE / OS</div><div className="text-xs text-white/40 mt-1">@{connection.username}</div></div>
+                <button onClick={() => setMobileNavOpen(false)} className="p-2 border border-white/10" aria-label="Close navigation"><X className="h-4 w-4"/></button>
+              </div>
+              <nav className="p-3 overflow-y-auto h-[calc(100%-73px)]">
+                {nav.map(group => (
+                  <div key={group.group} className="mb-6">
+                    <div className="ashqe-mono px-3 mb-2 text-[9px] tracking-[.18em] text-white/30">{group.group}</div>
+                    {group.items.map(([id,label,Icon]) => (
+                      <button key={id} onClick={() => navigateTab(id)} className={`w-full flex items-center gap-3 text-left px-3 py-3 text-sm border-l-2 ${tab===id ? "bg-white/10 text-white border-white" : "text-muted-foreground border-transparent"}`}>
+                        <Icon className="h-4 w-4" /><span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </nav>
+            </aside>
+          </div>
+        )}
+
+        <section className="flex-1 min-w-0 p-4 sm:p-6 md:p-9">
+          <div className="md:hidden flex items-center justify-between gap-3 pb-5">
+            <button onClick={() => setMobileNavOpen(true)} className="inline-flex items-center gap-2 border border-white/10 px-3 py-2 text-xs font-semibold">
+              <Menu className="h-4 w-4"/> Menu
+            </button>
+            <div className="ashqe-mono text-[9px] tracking-[.16em] text-white/35 uppercase">{flatNav.find(([id]) => id===tab)?.[1]}</div>
           </div>
 
           {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} />}
