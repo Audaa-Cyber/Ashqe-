@@ -44,7 +44,7 @@ export async function POST() {
   }
 
   try {
-    const profile = await analyzeStyle(tweets)
+    const profile = await analyzeStyle(tweets as Parameters<typeof analyzeStyle>[0])
     if (!profile) {
       return NextResponse.json({ ok: true, cloned: false, posts_analyzed: tweets.length })
     }
