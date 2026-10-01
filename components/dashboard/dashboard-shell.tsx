@@ -23,12 +23,15 @@ interface Props {
   stats: { postsAnalyzed: number; published: number; drafts: number }
 }
 
-const nav = [
-  { group: "COMMAND", items: [["home","Command",Command],["profile","Profile",Users]] },
-  { group: "INTELLIGENCE", items: [["research","Research",Search],["radar","Radar",RadarIcon],["growth","Growth",TrendingUp],["bd","BD",Users]] },
-  { group: "WORKSPACE", items: [["studio","Studio",PenLine],["automations","Automations",Clock3],["memory","Memory",Brain]] },
-] as const
-const flatNav = nav.flatMap(group => group.items)
+type NavItem = readonly [string, string, typeof Command]
+type NavGroup = { readonly group: string; readonly items: readonly NavItem[] }
+
+const nav: readonly NavGroup[] = [
+  { group: "COMMAND", items: [["home", "Command", Command], ["profile", "Profile", Users]] },
+  { group: "INTELLIGENCE", items: [["research", "Research", Search], ["radar", "Radar", RadarIcon], ["growth", "Growth", TrendingUp], ["bd", "BD", Users]] },
+  { group: "WORKSPACE", items: [["studio", "Studio", PenLine], ["automations", "Automations", Clock3], ["memory", "Memory", Brain]] },
+]
+const flatNav: readonly NavItem[] = nav.flatMap((group) => group.items)
 type TabId = (typeof flatNav)[number][0]
 
 export default function DashboardShell({ user, connection, style, drafts: initialDrafts, initialMessages, sessionId, stats }: Props) {
@@ -150,7 +153,7 @@ export default function DashboardShell({ user, connection, style, drafts: initia
   )
 }
 
-function CommandHome({connection,stats,setTab}:{connection:Props["connection"];stats:Props["stats"];setTab:(x:any)=>void}) {
+function CommandHome({connection,stats,setTab}:{connection:Props["connection"];stats:Props["stats"];setTab:(x:TabId)=>void}) {
   const cards=[
     ["01","CONVERSATION","A relevant discussion is waiting for you.","radar"],
     ["02","RESEARCH","An emerging topic needs a closer look.","research"],
@@ -176,7 +179,7 @@ function CommandHome({connection,stats,setTab}:{connection:Props["connection"];s
 
 function Research({research,setResearch,runResearch,result}:{research:string;setResearch:(x:string)=>void;runResearch:()=>void;result:string|null}) {
  return <div><SectionTitle eyebrow="RESEARCH LAB" title="Go broad. Go deep." sub="General research, niche intelligence, projects, people, competitors and living research briefs." />
- <div className="mt-8 max-w-3xl flex gap-2"><input value={research} onChange={e=>setResearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&runResearch()} placeholder="Research a topic, project, person or niche…" className="focus-ring flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none"/><button onClick={runResearch} className="bg-[#ffffff] text-black px-5 rounded-lg font-semibold">Research</button></div>
+ <div className="mt-8 max-w-3xl flex gap-2"><input value={research} onChange={e=>setResearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&runResearch()} placeholder="Research a topic, project, person or niche…" className="focus-ring flex-1 bg-white/5 border border-white/10 px-4 py-3 outline-none"/><button onClick={runResearch} className="bg-[#ffffff] text-black px-5 font-semibold">Research</button></div>
  <div className="grid md:grid-cols-3 gap-4 mt-8">{["Deep research","Niche monitor","Competitor watch"].map((x,i)=><div className="border border-white/10 p-5 min-h-32" key={x}><div className="ashqe-mono text-[10px] text-[#ffffff]">0{i+1}</div><h3 className="mt-7">{x}</h3><p className="text-xs text-muted-foreground mt-2">Continuous context, changes and source trails.</p></div>)}</div>
  {result&&<div className="mt-8 border border-[#ffffff]/30 bg-[#ffffff]/5 p-5 text-sm">{result}</div>}</div>
 }
@@ -305,7 +308,7 @@ function Automations(){
 }
 
 function PermissionRow({title,description,enabled,disabled,onChange}:{title:string;description:string;enabled:boolean;disabled:boolean;onChange:(v:boolean)=>void}){
- return <div className="p-6 flex items-center justify-between gap-5"><div><div className="font-medium">{title}</div><p className="text-xs text-muted-foreground mt-1 max-w-md">{description}</p></div><button disabled={disabled} onClick={()=>onChange(!enabled)} className={"w-12 h-7 rounded-full p-1 transition "+(enabled?"bg-[#ffffff]":"bg-white/10")+" "+(disabled?"opacity-40":"")}><span className={"block w-5 h-5 rounded-full bg-black transition "+(enabled?"translate-x-5":"")}/></button></div>
+ return <div className="p-6 flex items-center justify-between gap-5"><div><div className="font-medium">{title}</div><p className="text-xs text-muted-foreground mt-1 max-w-md">{description}</p></div><button disabled={disabled} onClick={()=>onChange(!enabled)} className={"w-12 h-7 border border-white/20 p-1 transition "+(enabled?"bg-[#ffffff]":"bg-white/10")+" "+(disabled?"opacity-40":"")}><span className={"block w-5 h-5 bg-black transition "+(enabled?"translate-x-5":"")}/></button></div>
 }
 function LimitField({label,value,onChange}:{label:string;value:number;onChange:(v:number)=>void}){
  return <label className="p-4 border-r border-white/10 last:border-r-0"><span className="ashqe-mono text-[10px] text-muted-foreground block">{label}</span><input type="number" min={0} max={20} value={value} onChange={e=>onChange(Number(e.target.value))} className="mt-2 w-full bg-white/5 border border-white/10 px-3 py-2"/></label>
