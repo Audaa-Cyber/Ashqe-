@@ -3,21 +3,79 @@ import { NextResponse } from "next/server"
 
 const allowedAutonomy = new Set(["observe", "assist", "approval", "autonomous"])
 
+type MemoryInput = {
+  title: string
+  content: string
+  kind: string
+  importance: number
+  source: string
+}
+
+async function replaceOnboardingMemory(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  memory: MemoryInput,
+) {
+  const { data: existing } = await supabase
+    .from("ashqe_memories")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("title", memory.title)
+    .eq("source", memory.source)
+    .limit(1)
+    .maybeSingle()
+
+  if (existing?.id) {
+    return supabase
+      .from("ashqe_memories")
+      .update({
+        content: memory.content,
+        kind: memory.kind,
+        importance: memory.importance,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id)
+  }
+
+  return supabase.from("ashqe_memories").insert({ user_id: userId, ...memory })
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
-  const goals = Array.isArray(body.goals) ? body.goals.filter((x: unknown): x is string => typeof x === "string" && x.trim()) : []
-  const topics = Array.isArray(body.topics) ? body.topics.filter((x: unknown): x is string => typeof x === "string" && x.trim()) : []
-  const autonomy = typeof body.autonomy === "string" && allowedAutonomy.has(body.autonomy) ? body.autonomy : "approval"
+  const goals = Array.isArray(body.goals)
+    ? body.goals.filter((x: unknown): x is string => typeof x === "string" && x.trim()).slice(0, 5)
+    : []
+  const topics = Array.isArray(body.topics)
+    ? body.topics.filter((x: unknown): x is string => typeof x === "string" && x.trim()).slice(0, 20)
+    : []
+  const autonomy =
+    typeof body.autonomy === "string" && allowedAutonomy.has(body.autonomy)
+      ? body.autonomy
+      : "approval"
 
-  const memories = [
-    ...goals.map((content) => ({ title: "X goal", content, kind: "goal", importance: 4, source: "onboarding" })),
-    ...topics.map((content) => ({ title: "Radar topic", content, kind: "interest", importance: 3, source: "onboarding" })),
+  // Re-running onboarding should replace its own generated memories rather than
+  // stacking duplicates. User-created memories are left untouched.
+  const generatedTitles = ["X goal", "Radar topic", "Autonomy preference"]
+  const { error: cleanupError } = await supabase
+    .from("ashqe_memories")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("source", "onboarding")
+    .in("title", generatedTitles)
+
+  if (cleanupError) {
+    console.error("[onboarding/complete] onboarding memory cleanup failed", cleanupError)
+    return NextResponse.json({ error: "save_failed" }, { status: 500 })
+  }
+
+  const memories: MemoryInput[] = [
+    ...goals.map((content) => ({ title: "X goal", content: content.trim(), kind: "goal", importance: 4, source: "onboarding" })),
+    ...topics.map((content) => ({ title: "Radar topic", content: content.trim(), kind: "interest", importance: 3, source: "onboarding" })),
     { title: "Autonomy preference", content: autonomy, kind: "rule", importance: 4, source: "onboarding" },
-    { title: "Onboarding completed", content: new Date().toISOString(), kind: "fact", importance: 5, source: "system" },
   ]
 
   for (const memory of memories) {
@@ -26,6 +84,32 @@ export async function POST(request: Request) {
       console.error("[onboarding/complete] memory save failed", error)
       return NextResponse.json({ error: "save_failed" }, { status: 500 })
     }
+  }
+
+  const { data: completed } = await supabase
+    .from("ashqe_memories")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("title", "Onboarding completed")
+    .eq("source", "system")
+    .limit(1)
+    .maybeSingle()
+
+  const completion = {
+    content: new Date().toISOString(),
+    kind: "fact",
+    importance: 5,
+    source: "system",
+    updated_at: new Date().toISOString(),
+  }
+
+  const { error: completionError } = completed?.id
+    ? await supabase.from("ashqe_memories").update(completion).eq("id", completed.id)
+    : await supabase.from("ashqe_memories").insert({ user_id: user.id, title: "Onboarding completed", ...completion })
+
+  if (completionError) {
+    console.error("[onboarding/complete] completion marker save failed", completionError)
+    return NextResponse.json({ error: "save_failed" }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
