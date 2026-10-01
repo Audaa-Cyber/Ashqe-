@@ -11,35 +11,6 @@ type MemoryInput = {
   source: string
 }
 
-async function replaceOnboardingMemory(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  memory: MemoryInput,
-) {
-  const { data: existing } = await supabase
-    .from("ashqe_memories")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("title", memory.title)
-    .eq("source", memory.source)
-    .limit(1)
-    .maybeSingle()
-
-  if (existing?.id) {
-    return supabase
-      .from("ashqe_memories")
-      .update({
-        content: memory.content,
-        kind: memory.kind,
-        importance: memory.importance,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id)
-  }
-
-  return supabase.from("ashqe_memories").insert({ user_id: userId, ...memory })
-}
-
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -47,7 +18,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}))
   const goals = Array.isArray(body.goals)
-    ? body.goals.filter((x: unknown): x is string => typeof x === "string" && x.trim()).slice(0, 5)
+    ? body.goals.filter((x: unknown): x is string => typeof x === "string" && !!x.trim()).slice(0, 5)
     : []
   const topics = Array.isArray(body.topics)
     ? body.topics.filter((x: unknown): x is string => typeof x === "string" && x.trim()).slice(0, 20)
