@@ -68,20 +68,27 @@ export default function OnboardingFlow({
   const [topics, setTopics] = useState("")
   const [autonomy, setAutonomy] = useState("approval")
   const [saving, setSaving] = useState(false)
-  const [cloneError, setCloneError] = useState(false)
+  const [cloneError, setCloneError] = useState<string | null>(null)
+  const [cloneAttempt, setCloneAttempt] = useState(0)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (phase !== "clone") return
 
     let cancelled = false
-    let progress = 0
+    let stage = 0
+    setCloneError(null)
+    setClonePercent(4)
+    setCloneIndex(0)
+
     const tick = window.setInterval(() => {
-      progress = Math.min(88, progress + 2 + Math.random() * 5)
+      stage = Math.min(cloneSteps.length - 1, stage + 1)
+      const progress = [12, 30, 52, 72, 88][stage]
       if (!cancelled) {
-        setClonePercent(Math.round(progress))
-        setCloneIndex(Math.min(cloneSteps.length - 1, Math.floor(progress / 19)))
+        setClonePercent(progress)
+        setCloneIndex(stage)
       }
-    }, 260)
+    }, 850)
 
     const run = async () => {
       try {
@@ -91,10 +98,11 @@ export default function OnboardingFlow({
         if (!cancelled) {
           if (data.profile) setStyle({ ...data.profile, updated_at: new Date().toISOString() })
           setClonePercent(100)
+          setCloneIndex(cloneSteps.length - 1)
           window.setTimeout(() => !cancelled && setPhase("conversation"), 850)
         }
-      } catch {
-        if (!cancelled) setCloneError(true)
+      } catch (error) {
+        if (!cancelled) setCloneError(error instanceof Error ? error.message : "clone_failed")
       }
     }
 
@@ -103,7 +111,7 @@ export default function OnboardingFlow({
       cancelled = true
       window.clearInterval(tick)
     }
-  }, [phase])
+  }, [phase, cloneAttempt])
 
   const profile = useMemo<DnaProfile>(() => ({
     username,
@@ -121,7 +129,9 @@ export default function OnboardingFlow({
 
   const saveAndFinish = async () => {
     setSaving(true)
-    const res = await fetch("/api/onboarding/complete", {
+    setSaveError(null)
+    try {
+      const res = await fetch("/api/onboarding/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -129,13 +139,17 @@ export default function OnboardingFlow({
         topics: topics.split(",").map((x) => x.trim()).filter(Boolean),
         autonomy,
       }),
-    })
-    if (!res.ok) {
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "save_failed")
+      }
+      setPhase("finish")
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "save_failed")
+    } finally {
       setSaving(false)
-      return
     }
-    setPhase("finish")
-    setSaving(false)
   }
 
   const submitGoal = () => {
@@ -184,9 +198,15 @@ export default function OnboardingFlow({
             </div>
 
             <div className="mt-5 flex justify-between ashqe-mono text-[9px] text-white/25">
-              <span>{cloneError ? "CLONE RETRY / YOUR X DATA IS STILL SAFE" : "VOICE / BEHAVIOR / INTERESTS / RHYTHM"}</span>
-              <span>{cloneError ? "RETRYING…" : "LIVE"}</span>
+              <span>{cloneError ? "CLONE FAILED / YOUR X DATA IS STILL SAFE" : "VOICE / BEHAVIOR / INTERESTS / RHYTHM"}</span>
+              <span>{cloneError ? "FAILED" : "LIVE"}</span>
             </div>
+            {cloneError && (
+              <div className="mt-6 border border-white/20 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="text-sm text-white/60">Ashqe could not finish reading your X history. Nothing was changed on your account.</div>
+                <button onClick={() => setCloneAttempt((value) => value + 1)} className="bg-white text-black px-4 py-2 text-xs font-bold">Retry clone</button>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -274,7 +294,10 @@ export default function OnboardingFlow({
             <div className="mt-7"><DnaCard profile={profile} /></div>
             <div className="mt-7 border border-white/10 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div><div className="text-sm">This is the profile Ashqe will use to write, reason and adapt to you.</div><div className="mt-1 text-xs text-white/35">You can keep refining it later.</div></div>
-              <button onClick={saveAndFinish} disabled={saving} className="bg-white text-black px-6 py-3 text-xs font-bold">{saving ? "Saving…" : "Finish & enter Ashqe →"}</button>
+              <div className="flex flex-col items-end gap-3">
+                {saveError && <div className="text-xs text-white/50" role="alert">Could not save your onboarding. Try again.</div>}
+                <button onClick={saveAndFinish} disabled={saving} className="bg-white text-black px-6 py-3 text-xs font-bold">{saving ? "Saving…" : "Finish & enter Ashqe →"}</button>
+              </div>
             </div>
           </div>
         </div>
