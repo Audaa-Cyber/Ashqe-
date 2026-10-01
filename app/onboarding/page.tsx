@@ -17,7 +17,7 @@ export default async function OnboardingPage() {
 
   const { data: style } = await supabase
     .from("style_profiles")
-    .select("tone, length_pref, rhythm, summary, posts_analyzed")
+    .select("tone, length_pref, rhythm, topics, signature_phrases, do_list, dont_list, summary, posts_analyzed, updated_at")
     .eq("user_id", user.id)
     .maybeSingle()
 
