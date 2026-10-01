@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import { fetchRecentTweets, fetchXMe } from "@/lib/x/api"
+import { fetchXMe } from "@/lib/x/api"
 import { exchangeCodeForToken } from "@/lib/x/oauth"
 import { type NextRequest, NextResponse } from "next/server"
 import { encryptToken } from "@/lib/security/tokens"
@@ -51,12 +51,8 @@ export async function GET(request: NextRequest) {
     return errRedirect(request, "users_me_failed")
   }
 
-  let tweets: Awaited<ReturnType<typeof fetchRecentTweets>> = []
-  try {
-    tweets = await fetchRecentTweets(tokens.access_token, me.id, 50)
-  } catch (error) {
-    console.error("[x-oauth] recent posts fetch failed", error)
-  }
+  const tweets: Array<{ id: string; text: string; created_at?: string; public_metrics?: Record<string, number> }> = []
+  const cleanTweets: Array<{ id: string; text: string; created_at: string | null; public_metrics: Record<string, number> | null }> = []
 
   const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 7200) * 1000).toISOString()
   const cleanTweets = tweets.map((tweet) => ({ id: tweet.id, text: tweet.text, created_at: tweet.created_at ?? null, public_metrics: tweet.public_metrics ?? null }))
