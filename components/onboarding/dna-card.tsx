@@ -18,10 +18,6 @@ export interface DnaProfile {
   version?: string | null
 }
 
-function esc(value: string) {
-  return value.replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c] ?? c))
-}
-
 function lines(text: string, max = 3) {
   return text.split(/\s+/).reduce<string[]>((acc, word) => {
     const next = acc[acc.length - 1]
@@ -120,7 +116,7 @@ export default function DnaCard({ profile, compact = false }: { profile: DnaProf
     <div className={compact ? "w-full" : "w-full max-w-5xl"}>
       <div className="relative overflow-hidden border border-white/15 bg-[#0b0b0b]">
         <div className="absolute -right-24 -top-24 h-72 w-72 border border-white/10 rotate-45" />
-        <div className="absolute right-16 top-12 h-24 w-24 border border-white/10 rounded-full animate-pulse" />
+        <div className="absolute right-16 top-12 h-24 w-24 border border-white/10 rotate-45 animate-pulse" />
         <div className="relative p-6 sm:p-9 md:p-12">
           <div className="flex items-start justify-between gap-6">
             <div>
