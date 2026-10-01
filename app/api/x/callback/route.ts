@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const res = NextResponse.redirect(new URL("/dashboard", request.url))
+  const res = NextResponse.redirect(new URL("/onboarding", request.url))
   for (const name of ["x_oauth_state", "x_oauth_verifier", "x_oauth_redirect_uri"]) res.cookies.set(name, "", { path: "/", maxAge: 0 })
   return res
 }
