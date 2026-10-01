@@ -19,8 +19,8 @@ export default function DashboardHeader({ user, connection }: Props) {
           <Link href="/" className="text-xl font-bold tracking-tight">
             Ashqe
           </Link>
-          <Link href="/billing" className="hidden sm:inline text-xs px-3 py-1.5 rounded-full border border-border hover:bg-secondary transition-colors">Billing</Link>
-          <span className="hidden sm:inline text-xs px-2 py-1 rounded-full bg-secondary text-foreground font-medium">
+          <Link href="/billing" className="hidden sm:inline text-xs px-3 py-1.5 border border-border hover:bg-secondary transition-colors">Billing</Link>
+          <span className="hidden sm:inline text-xs px-2 py-1 bg-secondary text-foreground font-medium">
             Dashboard
           </span>
         </div>
@@ -51,12 +51,12 @@ export default function DashboardHeader({ user, connection }: Props) {
               )}
             </button>
             {open && (
-              <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-background shadow-lg p-2 text-sm">
+              <div className="absolute right-0 mt-2 w-56 border border-border bg-background p-2 p-2 text-sm">
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-xs text-muted-foreground">Signed in as</p>
                   <p className="font-medium truncate">{user.email}</p>
                 </div>
-                <Link href="/api/privacy/export" className="block px-3 py-2 rounded hover:bg-secondary">Export data</Link>
+                <Link href="/api/privacy/export" className="block px-3 py-2 hover:bg-secondary">Export data</Link>
                 <button
                   type="button"
                   onClick={async () => {
