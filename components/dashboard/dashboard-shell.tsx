@@ -6,6 +6,7 @@ import type { UIMessage } from "ai"
 import DashboardHeader from "./dashboard-header"
 import ChatPanel from "./chat-panel"
 import DraftsGrid, { type Draft } from "./drafts-grid"
+import DnaCard from "@/components/onboarding/dna-card"
 
 interface StyleProfile {
   tone: string | null; length_pref: string | null; rhythm: string | null; topics: string[] | null
@@ -23,7 +24,7 @@ interface Props {
 }
 
 const nav = [
-  { group: "COMMAND", items: [["home","Command",Command]] },
+  { group: "COMMAND", items: [["home","Command",Command],["profile","Profile",Users]] },
   { group: "INTELLIGENCE", items: [["research","Research",Search],["radar","Radar",RadarIcon],["growth","Growth",TrendingUp],["bd","BD",Users]] },
   { group: "WORKSPACE", items: [["studio","Studio",PenLine],["automations","Automations",Clock3],["memory","Memory",Brain]] },
 ] as const
@@ -129,7 +130,7 @@ export default function DashboardShell({ user, connection, style, drafts: initia
             <div className="ashqe-mono text-[9px] tracking-[.16em] text-white/35 uppercase">{flatNav.find(([id]) => id===tab)?.[1]}</div>
           </div>
 
-          {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} />}
+          {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} />}\n          {tab === "profile" && <Profile connection={connection} style={style} />}
           {tab === "research" && <Research research={research} setResearch={setResearch} runResearch={runResearch} result={researchResult} />}
           {tab === "radar" && <Radar />}
           {tab === "growth" && <Growth stats={stats} />}
@@ -308,6 +309,26 @@ function PermissionRow({title,description,enabled,disabled,onChange}:{title:stri
 }
 function LimitField({label,value,onChange}:{label:string;value:number;onChange:(v:number)=>void}){
  return <label className="p-4 border-r border-white/10 last:border-r-0"><span className="ashqe-mono text-[10px] text-muted-foreground block">{label}</span><input type="number" min={0} max={20} value={value} onChange={e=>onChange(Number(e.target.value))} className="mt-2 w-full bg-white/5 border border-white/10 px-3 py-2"/></label>
+}
+
+function Profile({connection,style}:{connection:Props["connection"];style:StyleProfile|null}) {
+  const profile = {
+    username: connection.username,
+    name: connection.name,
+    tone: style?.tone ?? null,
+    length_pref: style?.length_pref ?? null,
+    rhythm: style?.rhythm ?? null,
+    topics: style?.topics ?? [],
+    signature_phrases: style?.signature_phrases ?? [],
+    do_list: style?.do_list ?? [],
+    dont_list: style?.dont_list ?? [],
+    summary: style?.summary ?? null,
+    posts_analyzed: style?.posts_analyzed ?? 0,
+  }
+  return <div>
+    <SectionTitle eyebrow="PROFILE / VOICE DNA" title="This is how Ashqe knows you." sub="Your Voice DNA is built from your connected X history and refined as you use Ashqe. The branded card is yours to keep." />
+    <div className="mt-8"><DnaCard profile={profile} /></div>
+  </div>
 }
 
 function Memory({style}:{style:StyleProfile|null}){
