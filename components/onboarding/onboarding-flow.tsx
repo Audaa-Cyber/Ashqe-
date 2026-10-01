@@ -15,7 +15,7 @@ const cloneSteps = [
   "Assembling your Voice DNA",
 ]
 
-const autonomy = [
+const autonomyOptions = [
   ["Observe", "Watch my X world and tell me what matters.", "observe"],
   ["Assist", "Research and prepare work for me.", "assist"],
   ["Act with approval", "Prepare actions and ask before executing.", "approval"],
@@ -264,7 +264,7 @@ export default function OnboardingFlow({
                 <div className="mt-3"><AshqeLine delay={1350}>How much should I do on my own?</AshqeLine></div>
 
                 <div className="mt-10 border border-white/10 divide-y divide-white/10">
-                  {autonomy.map(([title, description, id]) => (
+                  {autonomyOptions.map(([title, description, id]) => (
                     <button key={id} onClick={() => setAutonomy(id)} className={`w-full text-left p-5 border-l-2 ${autonomy === id ? "border-white bg-white/10" : "border-transparent hover:bg-white/5"}`}>
                       <div className="font-medium">{title}</div>
                       <div className="mt-1 text-sm text-white/40">{description}</div>
