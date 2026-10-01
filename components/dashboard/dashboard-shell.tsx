@@ -212,6 +212,54 @@ function CommandHome({
   )
 }
 
+function Opportunities() {
+  const [items, setItems] = useState<Array<{
+    key:string; type:string; title:string; whyNow:string; action:string;
+    confidence:number; urgency:number;
+    evidence:Array<{tweetId:string;url:string;text:string;authorId:string|null}>
+  }>>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/opportunities")
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || "Could not load opportunities")
+        if (!cancelled) setItems(data.opportunities ?? [])
+      })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Could not load opportunities") })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  return <div>
+    <SectionTitle eyebrow="OPPORTUNITY INBOX" title="Act on what matters." sub="Evidence-backed opportunities assembled from the public X signals Ashqe is already tracking." />
+    <div className="mt-8 border border-white/10 divide-y divide-white/10">
+      {loading && <div className="p-6 text-sm text-muted-foreground">Scanning indexed signals…</div>}
+      {error && <div className="p-6 text-sm text-red-300">{error}</div>}
+      {!loading && !error && items.length === 0 && <div className="p-8 text-sm text-muted-foreground">No opportunities yet. Run Radar ingestion to populate this inbox.</div>}
+      {!loading && !error && items.map((item) => (
+        <article key={item.key} className="p-5 md:p-6">
+          <div className="flex flex-wrap items-center gap-3 text-[10px] ashqe-mono uppercase tracking-widest text-muted-foreground">
+            <span>{item.type}</span><span>confidence {item.confidence}</span><span>urgency {item.urgency}/5</span>
+          </div>
+          <h3 className="mt-3 text-lg font-medium">{item.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.whyNow}</p>
+          <p className="mt-3 text-sm">{item.action}</p>
+          {item.evidence.length > 0 && <div className="mt-5 grid gap-px bg-white/10 md:grid-cols-2">
+            {item.evidence.slice(0,2).map((e) => <a key={e.tweetId} href={e.url} target="_blank" rel="noreferrer" className="bg-background p-4 hover:bg-white/[.03] transition">
+              <div className="text-[10px] ashqe-mono text-muted-foreground">EVIDENCE / X</div>
+              <p className="mt-2 text-sm line-clamp-4">{e.text}</p>
+            </a>)}
+          </div>}
+        </article>
+      ))}
+    </div>
+  </div>
+}
+
 function Research({research,setResearch,runResearch,result}:{research:string;setResearch:(x:string)=>void;runResearch:()=>void;result:string|null}) {
  return <div><SectionTitle eyebrow="RESEARCH LAB" title="Go broad. Go deep." sub="General research, niche intelligence, projects, people, competitors and living research briefs." />
  <div className="mt-8 max-w-3xl flex gap-2"><input value={research} onChange={e=>setResearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&runResearch()} placeholder="Research a topic, project, person or niche…" className="focus-ring flex-1 bg-white/5 border border-white/10 px-4 py-3 outline-none"/><button onClick={runResearch} className="bg-[#ffffff] text-black px-5 font-semibold">Research</button></div>
