@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { searchPublicTweets } from "@/lib/x/public-indexers"
+import { searchPublicTweetsAcrossProviders } from "@/lib/x/public-indexers"
 import { tweetsToSignals } from "@/lib/x/signal-engine"
 
 export async function POST(request: Request) {
@@ -24,8 +24,8 @@ export async function POST(request: Request) {
 
   for (const query of queries) {
     try {
-      const result = await searchPublicTweets(query, 20)
-      providers.add(result.provider)
+      const result = await searchPublicTweetsAcrossProviders(query, 20)
+      result.providers.forEach((provider) => providers.add(provider))
       const candidates = tweetsToSignals(result.tweets, query)
 
       for (const signal of candidates) {
