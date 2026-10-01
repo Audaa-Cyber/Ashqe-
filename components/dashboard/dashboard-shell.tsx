@@ -28,7 +28,7 @@ type NavGroup = { readonly group: string; readonly items: readonly NavItem[] }
 
 const nav: readonly NavGroup[] = [
   { group: "COMMAND", items: [["home", "Command", Command], ["profile", "Profile", Users]] },
-  { group: "INTELLIGENCE", items: [["research", "Research", Search], ["radar", "Radar", RadarIcon], ["growth", "Growth", TrendingUp], ["bd", "BD", Users]] },
+  { group: "INTELLIGENCE", items: [["research", "Research", Search], ["radar", "Radar", RadarIcon], ["opportunities", "Opportunities", TrendingUp], ["growth", "Growth", TrendingUp], ["bd", "BD", Users]] },
   { group: "WORKSPACE", items: [["studio", "Studio", PenLine], ["automations", "Automations", Clock3], ["memory", "Memory", Brain]] },
 ]
 const flatNav: readonly NavItem[] = nav.flatMap((group) => group.items)
@@ -136,6 +136,7 @@ export default function DashboardShell({ user, connection, style, drafts: initia
           {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} initialMessages={initialMessages} sessionId={sessionId} onDraftCreated={(draft) => setDrafts((current) => [draft, ...current])} />}\n          {tab === "profile" && <Profile connection={connection} style={style} />}
           {tab === "research" && <Research research={research} setResearch={setResearch} runResearch={runResearch} result={researchResult} />}
           {tab === "radar" && <Radar />}
+          {tab === "opportunities" && <Opportunities />}
           {tab === "growth" && <Growth stats={stats} />}
           {tab === "bd" && <BD />}
           {tab === "studio" && (
