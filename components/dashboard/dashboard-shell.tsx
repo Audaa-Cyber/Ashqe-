@@ -133,7 +133,7 @@ export default function DashboardShell({ user, connection, style, drafts: initia
             <div className="ashqe-mono text-[9px] tracking-[.16em] text-white/35 uppercase">{flatNav.find(([id]) => id===tab)?.[1]}</div>
           </div>
 
-          {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} />}\n          {tab === "profile" && <Profile connection={connection} style={style} />}
+          {tab === "home" && <CommandHome connection={connection} stats={stats} setTab={navigateTab} initialMessages={initialMessages} sessionId={sessionId} onDraftCreated={(draft) => setDrafts((current) => [draft, ...current])} />}\n          {tab === "profile" && <Profile connection={connection} style={style} />}
           {tab === "research" && <Research research={research} setResearch={setResearch} runResearch={runResearch} result={researchResult} />}
           {tab === "radar" && <Radar />}
           {tab === "growth" && <Growth stats={stats} />}
@@ -153,28 +153,62 @@ export default function DashboardShell({ user, connection, style, drafts: initia
   )
 }
 
-function CommandHome({connection,stats,setTab}:{connection:Props["connection"];stats:Props["stats"];setTab:(x:TabId)=>void}) {
-  const cards=[
-    ["01","CONVERSATION","A relevant discussion is waiting for you.","radar"],
-    ["02","RESEARCH","An emerging topic needs a closer look.","research"],
-    ["03","CONTENT","Your next post should come from a real observation.","studio"],
-    ["04","BD","Look for people and projects worth knowing.","bd"],
-  ]
-  return <div>
-    <div className="max-w-4xl">
-      <div className="ashqe-mono text-xs text-[#ffffff] uppercase tracking-[.18em]">Personal X intelligence</div>
-      <h1 className="ashqe-display text-5xl md:text-7xl mt-3 leading-[.92]">Good evening,<br/>{connection.name || "@"+connection.username}.</h1>
-      <p className="text-muted-foreground mt-5 text-lg max-w-2xl">What should we do? Ashqe watches your information environment so you can spend time acting on signal, not scrolling for it.</p>
+function CommandHome({
+  connection,
+  stats,
+  setTab,
+  initialMessages,
+  sessionId,
+  onDraftCreated,
+}: {
+  connection: Props["connection"]
+  stats: Props["stats"]
+  setTab: (x: TabId) => void
+  initialMessages: UIMessage[]
+  sessionId: string | null
+  onDraftCreated: (draft: Draft) => void
+}) {
+  const cards = [
+    ["01", "RADAR", "See what is moving around the topics you care about.", "radar"],
+    ["02", "RESEARCH", "Go from a question to evidence and a usable brief.", "research"],
+    ["03", "STUDIO", "Turn an observation into a post in your voice.", "studio"],
+    ["04", "BD", "Research people, projects and communities worth knowing.", "bd"],
+  ] as const
+
+  return (
+    <div>
+      <div className="max-w-4xl">
+        <div className="ashqe-mono text-xs text-[#ffffff] uppercase tracking-[.18em]">Personal X intelligence</div>
+        <h1 className="ashqe-display text-5xl md:text-7xl mt-3 leading-[.92]">Good evening,<br/>{connection.name || "@" + connection.username}.</h1>
+        <p className="text-muted-foreground mt-5 text-lg max-w-2xl">You do not need to find the right screen first. Tell Ashqe what you want to do and let the operator route the work.</p>
+      </div>
+
+      <div className="mt-10">
+        <ChatPanel
+          initialMessages={initialMessages}
+          sessionId={sessionId}
+          connectedUsername={connection.username}
+          onDraftCreated={onDraftCreated}
+        />
+      </div>
+
+      <div className="mt-8 grid md:grid-cols-4 gap-px bg-white/10 border border-white/10">
+        {cards.map(([n, k, title, destination]) => (
+          <button key={n} onClick={() => setTab(destination)} className="text-left bg-background p-5 min-h-36 hover:bg-white/[.03] transition">
+            <div className="ashqe-mono text-[10px] text-muted-foreground">{n} / {k}</div>
+            <p className="mt-8 text-sm leading-6">{title}</p>
+            <span className="text-xs text-[#ffffff] mt-3 inline-block">Open →</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-8 grid md:grid-cols-3 gap-4">
+        <Metric label="Posts analyzed" value={stats.postsAnalyzed} />
+        <Metric label="Drafts" value={stats.drafts} />
+        <Metric label="Published" value={stats.published} />
+      </div>
     </div>
-    <div className="grid md:grid-cols-4 gap-px bg-white/10 mt-12 border border-white/10">
-      {cards.map(([n,k,t,d])=><button key={n} onClick={()=>setTab(d)} className="text-left bg-background p-5 min-h-40 hover:bg-white/[.03] transition"><div className="ashqe-mono text-[10px] text-muted-foreground">{n} / {k}</div><p className="mt-8 text-sm leading-6">{t}</p><span className="text-xs text-[#ffffff] mt-3 inline-block">Open →</span></button>)}
-    </div>
-    <div className="mt-10 grid md:grid-cols-3 gap-4">
-      <Metric label="Posts analyzed" value={stats.postsAnalyzed} />
-      <Metric label="Drafts" value={stats.drafts} />
-      <Metric label="Published" value={stats.published} />
-    </div>
-  </div>
+  )
 }
 
 function Research({research,setResearch,runResearch,result}:{research:string;setResearch:(x:string)=>void;runResearch:()=>void;result:string|null}) {
