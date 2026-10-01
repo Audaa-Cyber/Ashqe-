@@ -192,7 +192,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
         })}
 
         {error && (
-          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-2">
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 px-4 py-2">
             {error.message || "Something went wrong"}
           </div>
         )}
