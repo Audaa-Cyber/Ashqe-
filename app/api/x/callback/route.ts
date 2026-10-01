@@ -51,10 +51,7 @@ export async function GET(request: NextRequest) {
     return errRedirect(request, "users_me_failed")
   }
 
-  const cleanTweets: Array<{ id: string; text: string; created_at: string | null; public_metrics: Record<string, number> | null }> = []
-
   const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 7200) * 1000).toISOString()
-  const cleanTweets = tweets.map((tweet) => ({ id: tweet.id, text: tweet.text, created_at: tweet.created_at ?? null, public_metrics: tweet.public_metrics ?? null }))
 
   const { data: authData } = await supabase.auth.getUser()
   let userId = authData.user?.id
@@ -103,7 +100,6 @@ export async function GET(request: NextRequest) {
     refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
     expires_at: expiresAt,
     scope: tokens.scope ?? null,
-    recent_posts: cleanTweets,
     updated_at: new Date().toISOString(),
   }
 
