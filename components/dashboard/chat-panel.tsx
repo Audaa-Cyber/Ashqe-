@@ -114,7 +114,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
           <h2 className="text-lg font-bold">Chat with your agent</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Tell it what you want to say</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-foreground text-background text-xs font-semibold">
+        <div className="flex items-center gap-2 px-3 py-1 border border-foreground bg-foreground text-background text-xs font-semibold">
           <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? "bg-background animate-pulse" : "bg-background"}`} />
           {isStreaming ? "Thinking" : "Live"}
         </div>
@@ -123,7 +123,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-1 -mr-1">
         {messages.length === 0 && (
           <div className="flex justify-start">
-            <div className="bg-secondary text-foreground rounded-2xl px-5 py-3 max-w-md">
+            <div className="bg-secondary/40 border-l-2 border-foreground px-5 py-3 max-w-md">
               <p className="text-sm leading-relaxed">
                 Hey. Ready when you are. What do you want to post about?
               </p>
@@ -137,7 +137,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
           return (
             <div key={m.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
               <div
-                className={`rounded-2xl px-5 py-3 max-w-[85%] md:max-w-[75%] whitespace-pre-wrap leading-relaxed ${
+                className={`px-5 py-3 max-w-[85%] md:max-w-[75%] whitespace-pre-wrap leading-relaxed ${
                   isUser
                     ? "bg-foreground text-background"
                     : "bg-secondary text-foreground border border-border"
@@ -206,7 +206,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
             onChange={(e) => setInput(e.target.value)}
             placeholder="What do you want to post about?"
             disabled={isStreaming}
-            className="flex-1 px-4 py-3 rounded-lg border border-border bg-secondary/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground disabled:opacity-60"
+            className="flex-1 px-4 py-3 border border-border bg-secondary/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground disabled:opacity-60"
           />
           {isStreaming ? (
             <Button type="button" onClick={stop} variant="outline" className="px-5 bg-transparent">
