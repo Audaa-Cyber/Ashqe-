@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ArrowRight, Check, Loader2, ScanLine, Sparkles } from "lucide-react"
+import { ArrowRight, Check, Loader2, Sparkles } from "lucide-react"
 import DnaCard, { type DnaProfile } from "./dna-card"
 
 type Style = Omit<DnaProfile, "username" | "name"> & { updated_at?: string | null }
@@ -125,6 +125,8 @@ export default function OnboardingFlow({
     dont_list: style?.dont_list ?? [],
     summary: style?.summary ?? "A living profile of how you communicate on X.",
     posts_analyzed: style?.posts_analyzed ?? 0,
+    updated_at: style?.updated_at ?? null,
+    version: "1.0",
   }), [username, name, style])
 
   const saveAndFinish = async () => {
