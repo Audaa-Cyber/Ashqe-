@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
     return errRedirect(request, "users_me_failed")
   }
 
-  const tweets: Array<{ id: string; text: string; created_at?: string; public_metrics?: Record<string, number> }> = []
   const cleanTweets: Array<{ id: string; text: string; created_at: string | null; public_metrics: Record<string, number> | null }> = []
 
   const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 7200) * 1000).toISOString()
