@@ -30,6 +30,26 @@ export async function POST(request: Request) {
 
       for (const signal of candidates) {
         const tweetId = String(signal.metadata.tweet_id)
+        const tweet = result.tweets.find((item) => item.id === tweetId)
+        if (!tweet) continue
+
+        const evidence = {
+          tweet_id: tweet.id,
+          source_url: "https://x.com/i/web/status/" + tweet.id,
+          text: tweet.text.trim().slice(0, 4000),
+          author_id: tweet.author_id ?? null,
+          created_at: tweet.created_at ?? null,
+          public_metrics: tweet.public_metrics ?? {},
+          providers: result.providers,
+          query,
+          fetched_at: new Date().toISOString(),
+        }
+
+        const metadata = {
+          ...signal.metadata,
+          evidence,
+        }
+
         const { data: existing } = await supabase
           .from("ashqe_signals")
           .select("id")
@@ -50,7 +70,7 @@ export async function POST(request: Request) {
             confidence: signal.confidence,
             urgency: signal.urgency,
             source_url: signal.sourceUrl,
-            metadata: signal.metadata,
+            metadata,
             status: "new",
           })
           .select("id,type,title,summary,confidence,urgency,source_url,metadata,status,created_at")
