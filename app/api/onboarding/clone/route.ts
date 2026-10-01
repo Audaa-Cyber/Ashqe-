@@ -32,7 +32,22 @@ export async function POST() {
     return NextResponse.json({ error: "x_history_failed" }, { status: 502 })
   }
 
-  await supabase.from("x_connections").update({ recent_posts: tweets.map((tweet) => ({ id: tweet.id, text: tweet.text, created_at: tweet.created_at ?? null, public_metrics: tweet.public_metrics ?? null })) }).eq("user_id", user.id)
+  const { error: historyWriteError } = await supabase
+    .from("x_connections")
+    .update({
+      recent_posts: tweets.map((tweet) => ({
+        id: tweet.id,
+        text: tweet.text,
+        created_at: tweet.created_at ?? null,
+        public_metrics: tweet.public_metrics ?? null,
+      })),
+    })
+    .eq("user_id", user.id)
+
+  if (historyWriteError) {
+    console.error("[onboarding/clone] X history persistence failed", historyWriteError)
+    return NextResponse.json({ error: "history_save_failed" }, { status: 500 })
+  }
 
   if (!tweets.length) {
     return NextResponse.json({
