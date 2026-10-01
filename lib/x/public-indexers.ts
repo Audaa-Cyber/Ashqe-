@@ -160,3 +160,50 @@ export async function searchPublicTweets(
 
   throw lastError instanceof Error ? lastError : new Error("All configured public X indexers failed")
 }
+
+
+/**
+ * Fan out a public discovery query across every configured indexer and merge
+ * the results by tweet id. This is the coverage path for Radar/Opportunity
+ * discovery; the single-provider function remains useful for targeted reads.
+ */
+export async function searchPublicTweetsAcrossProviders(
+  query: string,
+  maxPerProvider = 20,
+): Promise<{ tweets: XTweet[]; providers: PublicIndexer[]; cursors: Record<string, string | undefined> }> {
+  const providers = availablePublicIndexers()
+  if (!providers.length) throw new Error("No public X indexer is configured")
+
+  const settled = await Promise.allSettled(
+    providers.map((provider) => searchPublicTweets(query, maxPerProvider, { provider })),
+  )
+
+  const tweetsById = new Map<string, XTweet>()
+  const successfulProviders: PublicIndexer[] = []
+  const cursors: Record<string, string | undefined> = {}
+
+  for (let i = 0; i < settled.length; i += 1) {
+    const result = settled[i]
+    const requestedProvider = providers[i]
+    if (result.status !== "fulfilled") {
+      console.error(`[x-public-indexer] fanout provider failed: ${requestedProvider}`, result.reason)
+      continue
+    }
+
+    successfulProviders.push(result.value.provider)
+    cursors[requestedProvider] = result.value.nextCursor
+    for (const tweet of result.value.tweets) {
+      if (tweet.id) tweetsById.set(tweet.id, tweet)
+    }
+  }
+
+  if (!successfulProviders.length) {
+    throw new Error("All configured public X indexers failed")
+  }
+
+  return {
+    tweets: [...tweetsById.values()],
+    providers: [...new Set(successfulProviders)],
+    cursors,
+  }
+}
