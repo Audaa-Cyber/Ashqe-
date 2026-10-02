@@ -33,6 +33,7 @@ export class AgentRuntime {
   private readonly supabase
   private readonly checkpointer
   private readonly approve
+  private readonly policyApprove
 
   constructor(options: AgentRuntimeOptions) {
     this.emit = options.emit ?? (() => undefined)
@@ -40,7 +41,8 @@ export class AgentRuntime {
     this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
     this.supabase = options.supabase
     this.checkpointer = options.checkpointer
-    this.approve = options.approve ?? (this.supabase ? createExecutionPolicyApprovalGate(this.supabase) : undefined)
+    this.approve = options.approve
+    this.policyApprove = this.supabase ? createExecutionPolicyApprovalGate(this.supabase) : undefined
     this.graph = buildAgentWorkflow(options.handlers, this.checkpointer)
   }
 
@@ -63,6 +65,15 @@ export class AgentRuntime {
       const result = blockedResult(task.id, task.target, task.risk, authorization.reason)
       await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason })
       return result
+    }
+
+    if (task.target === "operator" && this.policyApprove) {
+      const policyApproval = await this.policyApprove(task)
+      if (!policyApproval.approved) {
+        const reason = policyApproval.reason ?? "execution_policy_denied"
+        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
+        return blockedResult(task.id, task.target, task.risk, reason)
+      }
     }
 
     if (task.risk !== "low") {
