@@ -67,12 +67,12 @@ export class AgentRuntime {
       return result
     }
 
-    if (task.target === "operator" && this.policyApprove) {
-      const policyApproval = await this.policyApprove(task)
-      if (!policyApproval.approved) {
-        const reason = policyApproval.reason ?? "execution_policy_denied"
-        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
-        return blockedResult(task.id, task.target, task.risk, reason)
+    if (this.supabase) {
+      const claim = await claimAgentTask(this.supabase, task)
+      if (!claim.claimed) {
+        const result = blockedResult(task.id, task.target, task.risk, claim.reason)
+        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: claim.reason })
+        return result
       }
     }
 
@@ -90,12 +90,20 @@ export class AgentRuntime {
       }
     }
 
-    if (this.supabase) {
-      const claim = await claimAgentTask(this.supabase, task)
-      if (!claim.claimed) {
-        const result = blockedResult(task.id, task.target, task.risk, claim.reason)
-        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: claim.reason })
+    let actionReservationId: string | null = null
+
+    if (task.target === "operator" && this.policyApprove) {
+      const policyApproval = await this.policyApprove(task)
+      if (!policyApproval.approved) {
+        const reason = policyApproval.reason ?? "execution_policy_denied"
+        const result = blockedResult(task.id, task.target, task.risk, reason)
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
         return result
+      }
+      actionReservationId = policyApproval.reservationId ?? null
+      if (actionReservationId && this.supabase) {
+        const { attachAgentReservation } = await import("./persistence")
+        await attachAgentReservation(this.supabase, task, actionReservationId)
       }
     }
 
@@ -111,6 +119,10 @@ export class AgentRuntime {
       if (result.status === "blocked") {
         const finalResult = blockedResult(task.id, task.target, task.risk, result.blockedReason ?? "agent_blocked")
         await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+        if (actionReservationId && this.supabase) {
+          const { settleAgentReservation } = await import("./persistence")
+          await settleAgentReservation(this.supabase, task, "released")
+        }
         return finalResult
       }
       if (result.status === "failed") {
@@ -121,11 +133,19 @@ export class AgentRuntime {
 
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "completed", output: result.outputs[task.target], risk: task.risk, createdAt: Date.now() }
       await this.publish({ type: "task.completed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task, finalResult)
+      if (actionReservationId && this.supabase) {
+        const { settleAgentReservation } = await import("./persistence")
+        await settleAgentReservation(this.supabase, task, "executed")
+      }
       return finalResult
     } catch (error) {
       const reason = error instanceof Error ? error.message : "agent_runtime_error"
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
       await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, finalResult)
+      if (actionReservationId && this.supabase) {
+        const { settleAgentReservation } = await import("./persistence")
+        await settleAgentReservation(this.supabase, task, "released")
+      }
       return finalResult
     }
   }
@@ -147,12 +167,13 @@ export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
     }
 
     const result = await authorizeAutonomousAction(supabase, task.userId, actionType, {
+      taskId: task.id,
       targetId: task.resource?.targetId,
       recipientOptedIn: task.input.recipientOptedIn === true,
       aiReplyApproved: task.input.aiReplyApproved === true,
       timezone: typeof task.input.timezone === "string" ? task.input.timezone : undefined,
     })
 
-    return { approved: result.allowed, reason: result.reason }
+    return { approved: result.allowed, reason: result.reason, reservationId: result.reservationId }
   }
 }
