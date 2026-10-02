@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { refreshAccessToken } from "./oauth"
 import { decryptToken, encryptToken } from "@/lib/security/tokens"
-import { fetchPublicXUserTweets, searchPublicXTweets } from "./public-indexer"
+import { fetchPublicTweetsFromIndexer, searchPublicTweets } from "./public-indexers"
 
 export interface XUser {
   id: string
@@ -108,7 +108,7 @@ export async function fetchXMe(accessToken: string): Promise<XUser> {
 }
 
 export async function fetchRecentTweets(_accessToken: string, xUserId: string, max = 50): Promise<XTweet[]> {
-  return mapPublicTweets(await fetchPublicXUserTweets(xUserId, max))
+  return await fetchPublicTweetsFromIndexer(xUserId, max)
 }
 
 export async function postTweet(accessToken: string, text: string): Promise<{ id: string; text: string }> {
@@ -142,7 +142,7 @@ export async function postReply(accessToken: string, text: string, inReplyToId: 
 
 
 export async function searchRecentTweets(_accessToken: string, query: string, max = 20): Promise<XTweet[]> {
-  return mapPublicTweets(await searchPublicXTweets(query, max))
+  return (await searchPublicTweets(query, max)).tweets
 }
 
 export async function fetchRecentMentions(_accessToken: string, xUsername: string, max = 50): Promise<XTweet[]> {
