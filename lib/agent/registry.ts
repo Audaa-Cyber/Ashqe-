@@ -5,7 +5,7 @@ const definitions: Record<AgentId, AgentDefinition> = {
     id: "orchestrator",
     trust: "system",
     // The orchestrator coordinates; it does not directly mutate X or memory.
-    allowedTools: ["research.read", "memory.read", "x.read.profile", "x.read.timeline", "x.read.post", "content.generate", "analytics.read"],
+    allowedTools: ["research.read", "memory.read", "x.read.profile", "x.read.timeline", "x.read.post", "content.generate", "analytics.read", "x.write.post", "x.write.reply"],
     allowedDelegates: ["research", "conversation", "voice", "content", "critic", "opportunity", "trend", "relationship", "analytics", "operator", "memory"],
     maxTaskDepth: 8,
   },
