@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { authorizeAutonomousAction } from "../execution-policy"
 import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint"
-import { isOperatorAction, requiredOperatorCapability, type AgentResult, type AgentTask } from "./contracts"
+import { isOperatorAction, validateOperatorAction, type AgentResult, type AgentTask } from "./contracts"
 import { authorizeAgentTask, blockedResult, createAgentTask } from "./orchestrator"
 import { buildAgentWorkflow, type AgentHandlerMap } from "./graph/workflow"
 import { claimAgentTask } from "./idempotency"
@@ -199,14 +199,11 @@ export class AgentRuntime {
 export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
   return async (task: AgentTask) => {
     if (task.target !== "operator") return { approved: true }
-    const actionType = task.input.actionType
-    const requiredCapability = requiredOperatorCapability(actionType)
-    if (!requiredCapability) {
-      return { approved: false, reason: "operator_action_type_required" }
+    const actionContract = validateOperatorAction(task)
+    if (!actionContract.allowed) {
+      return { approved: false, reason: actionContract.reason }
     }
-    if (!task.allowedTools.includes(requiredCapability)) {
-      return { approved: false, reason: "operator_capability_missing" }
-    }
+    const actionType = task.input.actionType as "post" | "reply"
 
     const result = await authorizeAutonomousAction(supabase, task.userId, actionType, {
       taskId: task.id,
