@@ -34,3 +34,30 @@ export async function recordAgentEvent(supabase: SupabaseClient, task: AgentTask
   })
   if (error) throw new Error("agent_event_write_failed")
 }
+
+
+export async function attachAgentReservation(
+  supabase: SupabaseClient,
+  task: AgentTask,
+  reservationId: string,
+) {
+  const { data, error } = await supabase.rpc("ashqe_attach_agent_reservation", {
+    p_task_id: task.id,
+    p_user_id: task.userId,
+    p_reservation_id: reservationId,
+  })
+  if (error || data !== true) throw new Error("agent_reservation_attach_failed")
+}
+
+export async function settleAgentReservation(
+  supabase: SupabaseClient,
+  task: AgentTask,
+  status: "executed" | "released",
+) {
+  const { data, error } = await supabase.rpc("ashqe_settle_agent_reservation", {
+    p_task_id: task.id,
+    p_user_id: task.userId,
+    p_status: status,
+  })
+  if (error || data !== true) throw new Error("agent_reservation_settle_failed")
+}
