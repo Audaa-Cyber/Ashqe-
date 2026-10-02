@@ -61,3 +61,18 @@ export async function settleAgentReservation(
   })
   if (error || data !== true) throw new Error("agent_reservation_settle_failed")
 }
+
+
+export async function assertAgentActionReservation(
+  supabase: SupabaseClient,
+  task: AgentTask,
+  actionType: "post" | "reply",
+) {
+  const { data, error } = await supabase.rpc("ashqe_assert_agent_action_reservation", {
+    p_task_id: task.id,
+    p_user_id: task.userId,
+    p_action_type: actionType,
+    p_target_id: task.resource?.targetId ?? null,
+  })
+  if (error || data !== true) throw new Error("agent_action_reservation_invalid")
+}
