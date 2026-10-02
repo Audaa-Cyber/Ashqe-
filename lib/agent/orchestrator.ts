@@ -26,6 +26,7 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
   }
 
   if (params.parentTask) {
+    if (params.parentTaskId !== params.parentTask.id) throw new Error("parent_task_id_mismatch")
     if (params.parentTask.userId !== params.userId) throw new Error("cross_user_delegation")
     if (params.parentTask.target !== params.issuer) throw new Error("parent_issuer_mismatch")
     if (params.parentTask.expiresAt <= now) throw new Error("parent_task_expired")
@@ -39,6 +40,11 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
   const depth = (params.parentTask?.depth ?? -1) + 1
   if (depth > issuer.maxTaskDepth) throw new Error("agent_task_depth_exceeded")
 
+  const riskRank = { low: 0, medium: 1, high: 2, critical: 3 } as const
+  if (params.parentTask && riskRank[params.risk] > riskRank[params.parentTask.risk]) {
+    throw new Error("child_risk_escalation")
+  }
+
   const task = AgentTaskSchema.parse({
     id: randomUUID(),
     parentTaskId: params.parentTaskId ?? null,
@@ -49,7 +55,7 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
     input: params.input ?? {},
     allowedTools: requestedTools,
     risk: params.risk,
-    expiresAt: now + MAX_TASK_TTL_MS,
+    expiresAt: params.parentTask ? Math.min(now + MAX_TASK_TTL_MS, params.parentTask.expiresAt) : now + MAX_TASK_TTL_MS,
     nonce: randomUUID() + randomUUID(),
     depth,
   })
