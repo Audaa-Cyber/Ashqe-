@@ -64,6 +64,22 @@ export class AgentRuntime {
     await this.persist(event, task, result)
   }
 
+  private async blockBeforeExecution(task: AgentTask, reason: string): Promise<AgentResult> {
+    const blocked: AgentResult = blockedResult(task.id, task.target, task.risk, reason)
+    try {
+      await this.publish(
+        { type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason },
+        task,
+        blocked,
+      )
+      return blocked
+    } catch {
+      // A claimed queued run must not be left terminally ambiguous when blocked
+      // lifecycle persistence fails. Try to persist a terminal failure instead.
+      return this.failBeforeExecution(task, "agent_blocked_persistence_failed")
+    }
+  }
+
   private async failBeforeExecution(task: AgentTask, reason: string): Promise<AgentResult> {
     const result: AgentResult = {
       taskId: task.id,
@@ -112,9 +128,7 @@ export class AgentRuntime {
     if (task.risk !== "low") {
       if (!this.approve) {
         const reason = "approval_required"
-        const result = blockedResult(task.id, task.target, task.risk, reason)
-        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
-        return result
+        return this.blockBeforeExecution(task, reason)
       }
       let approval: { approved: boolean; reason?: string }
       try {
@@ -124,18 +138,14 @@ export class AgentRuntime {
       }
       if (!approval.approved) {
         const reason = approval.reason ?? "approval_denied"
-        const result = blockedResult(task.id, task.target, task.risk, reason)
-        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
-        return result
+        return this.blockBeforeExecution(task, reason)
       }
     }
 
     const postApprovalAuthorization = authorizeAgentTask(task)
     if (!postApprovalAuthorization.allowed) {
       const reason = postApprovalAuthorization.reason
-      const result = blockedResult(task.id, task.target, task.risk, reason)
-      await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
-      return result
+      return this.blockBeforeExecution(task, reason)
     }
 
     let actionReservationId: string | null = null
@@ -151,9 +161,7 @@ export class AgentRuntime {
       }
       if (!policyApproval.approved) {
         const reason = policyApproval.reason ?? "execution_policy_denied"
-        const result = blockedResult(task.id, task.target, task.risk, reason)
-        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
-        return result
+        return this.blockBeforeExecution(task, reason)
       }
       actionReservationId = policyApproval.reservationId ?? null
       if (actionReservationId && this.supabase) {
