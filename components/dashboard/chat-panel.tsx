@@ -107,7 +107,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
   }
 
   return (
-    <section className="p-6 md:p-8 border border-border bg-background space-y-5 h-full flex flex-col min-h-[560px]">
+    <section aria-labelledby="ashqe-command-heading" className="p-6 md:p-8 border border-border bg-background space-y-5 h-full flex flex-col min-h-[560px]">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold">Chat with your agent</h2>
@@ -119,7 +119,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-1 -mr-1">
+      <div ref={scrollRef} aria-live="polite" aria-busy={isStreaming} className="flex-1 overflow-y-auto space-y-4 pr-1 -mr-1">
         {messages.length === 0 && (
           <div className="flex justify-start">
             <div className="bg-secondary/40 border-l-2 border-foreground px-5 py-3 max-w-md">
@@ -191,7 +191,7 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
         })}
 
         {error && (
-          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 px-4 py-2">
+          <div role="alert" className="text-sm text-destructive bg-destructive/10 border border-destructive/30 px-4 py-2">
             {error.message || "Something went wrong"}
           </div>
         )}
@@ -208,12 +208,13 @@ export default function ChatPanel({ initialMessages, sessionId: initialSessionId
             className="flex-1 px-4 py-3 border border-border bg-secondary/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground disabled:opacity-60"
           />
           {isStreaming ? (
-            <Button type="button" onClick={stop} variant="outline" className="px-5 bg-transparent">
+            <Button type="button" onClick={stop} variant="outline" className="px-5 bg-transparent" aria-label="Stop Ashqe">
               Stop
             </Button>
           ) : (
             <Button
               type="submit"
+              aria-label="Send command"
               disabled={!input.trim()}
               className="bg-foreground text-background hover:bg-foreground/90 px-5"
             >
