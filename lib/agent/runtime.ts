@@ -143,7 +143,7 @@ export class AgentRuntime {
     let externalSideEffectCompleted = false
 
     if (isOperatorAction(task) && this.policyApprove) {
-      let policyApproval: Awaited<ReturnType<NonNullable<typeof this.policyApprove>>>
+      let policyApproval: { approved: boolean; reason?: string; reservationId?: string }
       try {
         policyApproval = await this.policyApprove(task)
       } catch (error) {
