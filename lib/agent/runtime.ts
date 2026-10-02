@@ -5,6 +5,7 @@ import { isOperatorAction, validateOperatorAction, type AgentResult, type AgentT
 import { authorizeAgentTask, blockedResult, createAgentTask } from "./orchestrator"
 import { buildAgentWorkflow, type AgentHandlerMap } from "./graph/workflow"
 import { claimAgentTask } from "./idempotency"
+import { assertAgentActionReservation } from "./persistence"
 
 export type AgentRuntimeEvent = {
   type: "task.authorized" | "task.blocked" | "task.started" | "task.completed" | "task.failed"
@@ -133,6 +134,14 @@ export class AgentRuntime {
     const timeout = setTimeout(() => controller.abort(new Error("agent_runtime_timeout")), this.timeoutMs)
 
     try {
+      if (actionReservationId && this.supabase && isOperatorAction(task)) {
+        const actionType = task.input.actionType
+        if (actionType !== "post" && actionType !== "reply") {
+          throw new Error("operator_action_type_required")
+        }
+        await assertAgentActionReservation(this.supabase, task, actionType)
+      }
+
       const graphRun = this.graph.invoke(
         { task, status: "running" },
         {
