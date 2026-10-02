@@ -71,7 +71,7 @@ async function searchFromProvider(provider: PublicIndexer, query: string, max: n
     if (cursor) url.searchParams.set("cursor", cursor)
     const json = await readJson(await request(url, { headers: { Accept: "application/json" } }), "FxTwitter")
     const results = Array.isArray(json.results) ? json.results : []
-    return { tweets: results.filter((tweet: any) => tweet?.type === "status" && tweet?.id && typeof tweet?.text === "string").slice(0, max).map(normalizeTweet), provider, nextCursor: json.cursor?.bottom ?? undefined }
+    return { tweets: results.filter((tweet: unknown) => {\n      const item = tweet as Record<string, unknown>\n      return item?.type === "status" && item?.id && typeof item?.text === "string"\n    }).slice(0, max).map(normalizeTweet), provider, nextCursor: json.cursor?.bottom ?? undefined }
   }
 
   if (provider === "socialdata") {
@@ -79,7 +79,7 @@ async function searchFromProvider(provider: PublicIndexer, query: string, max: n
     url.searchParams.set("query", query); url.searchParams.set("type", "Latest")
     if (cursor) url.searchParams.set("cursor", cursor)
     const json = await readJson(await request(url, { headers: { Authorization: `Bearer ${process.env.SOCIALDATA_API_KEY}`, Accept: "application/json" } }), "SocialData")
-    return { tweets: (json.tweets ?? []).slice(0, max).map(normalizeTweet), provider, nextCursor: json.next_cursor }
+    return { tweets: (json.tweets ?? []).slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)), provider, nextCursor: json.next_cursor }
   }
 
   if (provider === "twexapi") {
@@ -89,7 +89,7 @@ async function searchFromProvider(provider: PublicIndexer, query: string, max: n
       body: JSON.stringify({ searchTerms: [query], sortBy: "Latest", next_cursor: cursor ?? "" }),
     }), "TwexAPI")
     const data = Array.isArray(json.data) ? json.data : []
-    return { tweets: data.slice(0, max).map(normalizeTweet), provider, nextCursor: json.next_cursor }
+    return { tweets: data.slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)), provider, nextCursor: json.next_cursor }
   }
 
   const url = new URL("https://api.relayxapi.com/twitter/tweet/advanced_search")
@@ -97,7 +97,7 @@ async function searchFromProvider(provider: PublicIndexer, query: string, max: n
   if (cursor) url.searchParams.set("cursor", cursor)
   const json = await readJson(await request(url, { headers: { "x-api-key": process.env.RELAYX_API_KEY!, Accept: "application/json" } }), "RelayX")
   const data = Array.isArray(json.data) ? json.data : (json.data?.tweets ?? [])
-  return { tweets: data.slice(0, max).map(normalizeTweet), provider, nextCursor: json.next_cursor ?? json.data?.next_cursor }
+  return { tweets: data.slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)), provider, nextCursor: json.next_cursor ?? json.data?.next_cursor }
 }
 
 /** Execute exactly one configured provider. Fanout uses this to avoid nested fallbacks. */
