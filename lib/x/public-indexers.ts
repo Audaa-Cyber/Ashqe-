@@ -145,8 +145,30 @@ export async function searchPublicTweetsAcrossProviders(query: string, maxPerPro
 
 
 export async function fetchPublicTweetsFromIndexer(userId: string, max = 100): Promise<XTweet[]> {
-  const cleanId = encodeURIComponent(userId.trim())
-  const json = await fetcherRequest(`/api/user/${cleanId}/tweets`)
-  const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
-  return raw.slice(0, Math.min(Math.max(max, 1), 100)).map(normalizeTweet).filter((tweet) => tweet.id && tweet.text)
+  const count = Math.min(Math.max(max, 1), 100)
+  let lastError: unknown
+
+  try {
+    const url = new URL("https://api.fxtwitter.com/2/profile/id:" + encodeURIComponent(userId) + "/statuses")
+    url.searchParams.set("count", String(count))
+    const json = await readJson(await request(url, { headers: { Accept: "application/json" } }), "FxTwitter")
+    const raw = Array.isArray(json.results) ? json.results : []
+    const tweets = raw.map(normalizeTweet).filter((tweet) => tweet.id && tweet.text).slice(0, count)
+    if (tweets.length) return tweets
+  } catch (error) {
+    lastError = error
+    console.error("[x-public-indexer] fxtwitter timeline failed", error)
+  }
+
+  try {
+    const json = await fetcherRequest("/api/user/" + encodeURIComponent(userId) + "/tweets")
+    const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
+    const tweets = raw.slice(0, count).map(normalizeTweet).filter((tweet) => tweet.id && tweet.text)
+    if (tweets.length) return tweets
+  } catch (error) {
+    lastError = error
+    console.error("[x-public-indexer] fetcher timeline failed", error)
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("No public X timeline indexer returned data")
 }
