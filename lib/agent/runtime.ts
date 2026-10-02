@@ -103,6 +103,7 @@ export class AgentRuntime {
 
     let actionReservationId: string | null = null
     let actionReservationSettled = false
+    let externalSideEffectCompleted = false
 
     if (isOperatorAction(task) && this.policyApprove) {
       const policyApproval = await this.policyApprove(task)
@@ -182,6 +183,7 @@ export class AgentRuntime {
       }
 
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "completed", output: result.outputs[task.target], risk: task.risk, createdAt: Date.now() }
+      externalSideEffectCompleted = Boolean(actionReservationId && isOperatorAction(task))
 
       // A completed Operator handler means the external X side effect has already
       // happened. Settle the reservation before non-essential lifecycle publishing;
@@ -216,7 +218,7 @@ export class AgentRuntime {
       const reason = controller.signal.aborted ? "agent_runtime_timeout" : error instanceof Error ? error.message : "agent_runtime_error"
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
       await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, finalResult)
-      if (actionReservationId && this.supabase && !actionReservationSettled) {
+      if (actionReservationId && this.supabase && !actionReservationSettled && !externalSideEffectCompleted) {
         const { settleAgentReservation } = await import("./persistence")
         await settleAgentReservation(this.supabase, task, "released")
       }
