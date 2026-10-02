@@ -189,7 +189,8 @@ export class AgentRuntime {
       if (actionReservationId && this.supabase) {
         const { settleAgentReservation } = await import("./persistence")
         try {
-          await settleAgentReservation(this.supabase, task, "executed")
+          const settled = await settleAgentReservation(this.supabase, task, "executed")
+          if (!settled) throw new Error("agent_reservation_not_active_after_side_effect")
           actionReservationSettled = true
         } catch {
           const settlementFailure: AgentResult = {
