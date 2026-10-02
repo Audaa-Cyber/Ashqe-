@@ -64,6 +64,27 @@ export class AgentRuntime {
     await this.persist(event, task, result)
   }
 
+  private async failBeforeExecution(task: AgentTask, reason: string): Promise<AgentResult> {
+    const result: AgentResult = {
+      taskId: task.id,
+      agent: task.target,
+      status: "failed",
+      reason,
+      risk: task.risk,
+      createdAt: Date.now(),
+    }
+    try {
+      await this.publish(
+        { type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason },
+        task,
+        result,
+      )
+    } catch {
+      // The claimed run remains durable; never replace the primary pre-execution failure.
+    }
+    return result
+  }
+
   async dispatch(task: AgentTask): Promise<AgentResult> {
     const authorization = authorizeAgentTask(task)
     if (!authorization.allowed) {
@@ -95,7 +116,12 @@ export class AgentRuntime {
         await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
         return result
       }
-      const approval = await this.approve(task)
+      let approval: { approved: boolean; reason?: string }
+      try {
+        approval = await this.approve(task)
+      } catch (error) {
+        return this.failBeforeExecution(task, error instanceof Error ? error.message : "approval_execution_failed")
+      }
       if (!approval.approved) {
         const reason = approval.reason ?? "approval_denied"
         const result = blockedResult(task.id, task.target, task.risk, reason)
@@ -117,7 +143,12 @@ export class AgentRuntime {
     let externalSideEffectCompleted = false
 
     if (isOperatorAction(task) && this.policyApprove) {
-      const policyApproval = await this.policyApprove(task)
+      let policyApproval: Awaited<ReturnType<NonNullable<typeof this.policyApprove>>>
+      try {
+        policyApproval = await this.policyApprove(task)
+      } catch (error) {
+        return this.failBeforeExecution(task, error instanceof Error ? error.message : "execution_policy_check_failed")
+      }
       if (!policyApproval.approved) {
         const reason = policyApproval.reason ?? "execution_policy_denied"
         const result = blockedResult(task.id, task.target, task.risk, reason)
