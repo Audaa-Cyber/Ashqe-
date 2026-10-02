@@ -88,6 +88,9 @@ export function isExpired(task: AgentTask, now = Date.now()) {
 }
 
 export function validateTaskBoundary(task: AgentTask, definition: AgentDefinition, now = Date.now()) {
+  if (task.resource && task.resource.ownerUserId !== task.userId) {
+    return { allowed: false, reason: "resource_owner_mismatch" as const }
+  }
   if (isExpired(task, now)) return { allowed: false, reason: "task_expired" as const }
   if (task.depth > definition.maxTaskDepth) return { allowed: false, reason: "task_depth_exceeded" as const }
   if (!definition.allowedDelegates.includes(task.target)) {
