@@ -87,6 +87,20 @@ export function isExpired(task: AgentTask, now = Date.now()) {
   return task.expiresAt <= now
 }
 
+export function isResourceOwnedByTask(task: AgentTask) {
+  return !task.resource || task.resource.ownerUserId === task.userId
+}
+
+export function isOperatorAction(task: AgentTask) {
+  return task.target === "operator"
+}
+
+export function requiredOperatorCapability(actionType: unknown): Capability | null {
+  if (actionType === "post") return "x.write.post"
+  if (actionType === "reply") return "x.write.reply"
+  return null
+}
+
 export function validateTaskBoundary(task: AgentTask, definition: AgentDefinition, now = Date.now()) {
   if (task.resource && task.resource.ownerUserId !== task.userId) {
     return { allowed: false, reason: "resource_owner_mismatch" as const }
