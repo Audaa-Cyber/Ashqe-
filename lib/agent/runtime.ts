@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint"
 import type { AgentResult, AgentTask } from "./contracts"
 import { authorizeAgentTask, blockedResult, createAgentTask } from "./orchestrator"
 import { buildAgentWorkflow, type AgentHandlerMap } from "./graph/workflow"
@@ -19,6 +20,7 @@ export type AgentRuntimeOptions = {
   maxSteps?: number
   timeoutMs?: number
   supabase?: SupabaseClient
+  checkpointer?: BaseCheckpointSaver
 }
 
 export class AgentRuntime {
@@ -27,13 +29,15 @@ export class AgentRuntime {
   private readonly maxSteps
   private readonly timeoutMs
   private readonly supabase
+  private readonly checkpointer
 
   constructor(options: AgentRuntimeOptions) {
-    this.graph = buildAgentWorkflow(options.handlers)
     this.emit = options.emit ?? (() => undefined)
     this.maxSteps = Math.max(1, Math.min(options.maxSteps ?? 12, 50))
     this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
     this.supabase = options.supabase
+    this.checkpointer = options.checkpointer
+    this.graph = buildAgentWorkflow(options.handlers, this.checkpointer)
   }
 
   private async persist(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
@@ -71,7 +75,7 @@ export class AgentRuntime {
 
     try {
       const result = await Promise.race([
-        this.graph.invoke({ task, status: "running" }, { recursionLimit: this.maxSteps }),
+        this.graph.invoke({ task, status: "running" }, { recursionLimit: this.maxSteps, configurable: { thread_id: task.id, checkpoint_ns: task.target } }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error("agent_runtime_timeout")), this.timeoutMs)),
       ])
 
