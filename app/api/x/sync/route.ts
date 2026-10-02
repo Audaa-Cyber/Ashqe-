@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getValidAccessToken, fetchRecentTweets, fetchRecentMentions, searchRecentTweets } from "@/lib/x/api"
+import { fetchRecentTweets, fetchRecentMentions, searchRecentTweets } from "@/lib/x/api"
 
 export const maxDuration=60
 
@@ -8,15 +8,19 @@ export async function POST(){
   const supabase=await createClient()
   const {data:{user}}=await supabase.auth.getUser()
   if(!user)return NextResponse.json({error:"unauthorized"},{status:401})
-  const conn=await getValidAccessToken(supabase,user.id)
-  if(!conn)return NextResponse.json({error:"x_not_connected"},{status:400})
-  const [tweets,mentions]=await Promise.all([fetchRecentTweets(conn.access_token,conn.x_user_id,100),fetchRecentMentions(conn.access_token,conn.x_username,100)])
+  const { data: conn, error: connectionError } = await supabase
+    .from("x_connections")
+    .select("x_user_id,x_username")
+    .eq("user_id", user.id)
+    .maybeSingle()
+  if (connectionError || !conn) return NextResponse.json({ error: "x_not_connected" }, { status: 400 })
+  const [tweets,mentions]=await Promise.all([fetchRecentTweets("",conn.x_user_id,100),fetchRecentMentions("",conn.x_username,100)])
   const style=await supabase.from("style_profiles").select("topics").eq("user_id",user.id).maybeSingle()
   const topics=Array.isArray(style.data?.topics)?style.data.topics.slice(0,3):[]
   let discovered:unknown[]=[]
   for(const topic of topics){
     try{
-      const hits=await searchRecentTweets(conn.access_token,String(topic)+" -is:retweet",30)
+      const hits=await searchRecentTweets("",String(topic)+" -is:retweet",30)
       const top=hits.filter(t=>(t.public_metrics?.like_count??0)+(t.public_metrics?.reply_count??0)>=5).slice(0,5)
       for(const hit of top) discovered.push({topic, tweet:hit})
     }catch{}
