@@ -64,7 +64,9 @@
     "vaul": "^1.1.2",
     "zod": "^3.24.1",
     "animejs": "^4.5.0",
-    "gsap": "^3.13.0"
+    "gsap": "^3.13.0",
+    "@langchain/core": "^1.2.9",
+    "@langchain/langgraph": "^1.4.18"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.0",
