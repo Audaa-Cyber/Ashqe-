@@ -76,3 +76,17 @@ export async function assertAgentActionReservation(
   })
   if (error || data !== true) throw new Error("agent_action_reservation_invalid")
 }
+
+
+export async function releaseAgentReservation(
+  supabase: SupabaseClient,
+  task: AgentTask,
+  reservationId: string,
+) {
+  const { data, error } = await supabase.rpc("ashqe_release_agent_reservation", {
+    p_task_id: task.id,
+    p_user_id: task.userId,
+    p_reservation_id: reservationId,
+  })
+  if (error || data !== true) throw new Error("agent_reservation_release_failed")
+}
