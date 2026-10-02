@@ -7,7 +7,7 @@ import { assertAgentActionReservation } from "./persistence"
 function requiredText(taskInput: Record<string, unknown>) {
   const text = typeof taskInput.text === "string" ? taskInput.text.trim() : ""
   if (!text) throw new Error("operator_text_required")
-  if (text.length > 280) throw new Error("operator_text_too_long")
+  if (Array.from(text).length > 280) throw new Error("operator_text_too_long")
   return text
 }
 
@@ -31,14 +31,15 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
     const text = requiredText(task.input)
     const targetId = task.resource?.targetId
 
-    // This is intentionally adjacent to the external X request.
-    await assertAgentActionReservation(supabase, task, actionType)
-
     const connection = await getValidAccessToken(supabase, task.userId)
     if (!connection) throw new Error("x_not_connected")
 
     if (actionType === "reply") {
       if (!targetId) throw new Error("operator_reply_target_required")
+
+      // Keep the final authorization check immediately adjacent to the external
+      // X request so a reservation cannot expire during token lookup.
+      await assertAgentActionReservation(supabase, task, actionType)
       const posted = await postReply(connection.access_token, text, targetId)
       return {
         taskId: task.id,
@@ -50,6 +51,9 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
       }
     }
 
+    // Keep the final authorization check immediately adjacent to the external
+    // X request so a reservation cannot expire during token lookup.
+    await assertAgentActionReservation(supabase, task, actionType)
     const posted = await postTweet(connection.access_token, text)
     return {
       taskId: task.id,
