@@ -40,7 +40,7 @@ export class AgentRuntime {
     this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
     this.supabase = options.supabase
     this.checkpointer = options.checkpointer
-    this.approve = options.approve
+    this.approve = options.approve ?? (this.supabase ? createExecutionPolicyApprovalGate(this.supabase) : undefined)
     this.graph = buildAgentWorkflow(options.handlers, this.checkpointer)
   }
 
