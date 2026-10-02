@@ -14,7 +14,7 @@ function getSigningSecret() {
 function signingPayload(task: Omit<AgentTask, "signature">) {
   return JSON.stringify([
     task.id, task.parentTaskId, task.userId, task.issuer, task.target, task.goal,
-    task.input, task.allowedTools, task.risk, task.expiresAt, task.nonce, task.depth,
+    task.input, task.allowedTools, task.resource, task.risk, task.expiresAt, task.nonce, task.depth,
   ])
 }
 
