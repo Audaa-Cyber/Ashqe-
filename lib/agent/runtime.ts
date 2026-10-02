@@ -165,20 +165,24 @@ export class AgentRuntime {
 
       if (result.status === "blocked") {
         const finalResult = blockedResult(task.id, task.target, task.risk, result.blockedReason ?? "agent_blocked")
-        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
         if (actionReservationId && this.supabase) {
           const { settleAgentReservation } = await import("./persistence")
-          await settleAgentReservation(this.supabase, task, "released")
+          const released = await settleAgentReservation(this.supabase, task, "released")
+          if (!released) throw new Error("agent_reservation_release_failed")
+          actionReservationSettled = true
         }
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
         return finalResult
       }
       if (result.status === "failed") {
         const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason: result.blockedReason ?? "agent_failed", risk: task.risk, createdAt: Date.now() }
-        await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
         if (actionReservationId && this.supabase) {
           const { settleAgentReservation } = await import("./persistence")
-          await settleAgentReservation(this.supabase, task, "released")
+          const released = await settleAgentReservation(this.supabase, task, "released")
+          if (!released) throw new Error("agent_reservation_release_failed")
+          actionReservationSettled = true
         }
+        await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
         return finalResult
       }
 
