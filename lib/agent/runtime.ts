@@ -120,10 +120,27 @@ export class AgentRuntime {
     await this.publish({ type: "task.authorized", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
     await this.publish({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(new Error("agent_runtime_timeout")), this.timeoutMs)
+
     try {
+      const graphRun = this.graph.invoke(
+        { task, status: "running" },
+        {
+          recursionLimit: this.maxSteps,
+          signal: controller.signal,
+          configurable: { thread_id: task.id, checkpoint_ns: task.target },
+        },
+      )
       const result = await Promise.race([
-        this.graph.invoke({ task, status: "running" }, { recursionLimit: this.maxSteps, configurable: { thread_id: task.id, checkpoint_ns: task.target } }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("agent_runtime_timeout")), this.timeoutMs)),
+        graphRun,
+        new Promise<never>((_, reject) => {
+          controller.signal.addEventListener(
+            "abort",
+            () => reject(controller.signal.reason ?? new Error("agent_runtime_timeout")),
+            { once: true },
+          )
+        }),
       ])
 
       if (result.status === "blocked") {
@@ -153,7 +170,7 @@ export class AgentRuntime {
       }
       return finalResult
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "agent_runtime_error"
+      const reason = controller.signal.aborted ? "agent_runtime_timeout" : error instanceof Error ? error.message : "agent_runtime_error"
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
       await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, finalResult)
       if (actionReservationId && this.supabase) {
@@ -161,6 +178,9 @@ export class AgentRuntime {
         await settleAgentReservation(this.supabase, task, "released")
       }
       return finalResult
+    } finally {
+      clearTimeout(timeout)
+      if (!controller.signal.aborted) controller.abort()
     }
   }
 
