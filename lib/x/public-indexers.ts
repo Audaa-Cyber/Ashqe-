@@ -74,7 +74,7 @@ async function searchFromProvider(provider: PublicIndexer, query: string, max: n
     return { tweets: results.filter((tweet: unknown) => {
       const item = tweet as Record<string, unknown>
       return item?.type === "status" && item?.id && typeof item?.text === "string"
-    }).slice(0, max).map(normalizeTweet), provider, nextCursor: json.cursor?.bottom ?? undefined }
+    }).slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)), provider, nextCursor: json.cursor?.bottom ?? undefined }
   }
 
   if (provider === "socialdata") {
