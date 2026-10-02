@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 interface Props {
   user: { email: string }
@@ -11,6 +11,15 @@ interface Props {
 export default function DashboardHeader({ user, connection }: Props) {
   const [open, setOpen] = useState(false)
   const initial = (connection.name?.[0] ?? user.email[0] ?? "A").toUpperCase()
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [open])
 
   return (
     <header className="border-b border-border/60 sticky top-0 bg-background/95 backdrop-blur-md z-50">
