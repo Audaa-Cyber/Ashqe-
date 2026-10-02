@@ -53,7 +53,8 @@ async function fetcherRequest(path: string, params: Record<string, string> = {})
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
   const headers: HeadersInit = { Accept: "application/json" }
   if (process.env.ASHQE_X_PUBLIC_DATA_KEY) headers.Authorization = `Bearer ${process.env.ASHQE_X_PUBLIC_DATA_KEY}`
-  return readJson(await request(url, { headers }), "Fetcher")
+  const envelope = await readJson(await request(url, { headers }), "Fetcher")
+  return envelope?.data ?? envelope
 }
 
 async function fetcherSearch(query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
