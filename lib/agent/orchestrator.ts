@@ -80,6 +80,7 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
     goal: params.goal,
     input: params.input ?? {},
     allowedTools: requestedTools,
+    resource: params.resource,
     risk: params.risk,
     expiresAt: params.parentTask ? Math.min(now + MAX_TASK_TTL_MS, params.parentTask.expiresAt) : now + MAX_TASK_TTL_MS,
     nonce: randomUUID() + randomUUID(),
