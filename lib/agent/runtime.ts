@@ -86,8 +86,9 @@ export class AgentRuntime {
       const approval = await this.approve(task)
       if (!approval.approved) {
         const reason = approval.reason ?? "approval_denied"
-        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
-        return blockedResult(task.id, task.target, task.risk, reason)
+        const result = blockedResult(task.id, task.target, task.risk, reason)
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
+        return result
       }
     }
 
