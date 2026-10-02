@@ -6,7 +6,7 @@ export interface PublicSearchResult { tweets: XTweet[]; provider: PublicIndexer;
 
 const FETCH_TIMEOUT_MS = 12_000
 
-function normalizeTweet(input: any): XTweet {
+function normalizeTweet(input: unknown): XTweet {
   const metrics = input.public_metrics ?? {
     retweet_count: Number(input.retweet_count ?? input.reposts ?? 0),
     reply_count: Number(input.reply_count ?? input.replies ?? 0),
