@@ -141,6 +141,11 @@ export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
       return { approved: false, reason: "operator_action_type_required" }
     }
 
+    const requiredCapability = actionType === "post" ? "x.write.post" : "x.write.reply"
+    if (!task.allowedTools.includes(requiredCapability)) {
+      return { approved: false, reason: "operator_capability_missing" }
+    }
+
     const result = await authorizeAutonomousAction(supabase, task.userId, actionType, {
       targetId: typeof task.input.targetId === "string" ? task.input.targetId : undefined,
       recipientOptedIn: task.input.recipientOptedIn === true,
