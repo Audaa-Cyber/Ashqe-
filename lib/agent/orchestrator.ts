@@ -53,6 +53,12 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
   if (!issuer.allowedDelegates.includes(params.target)) throw new Error("agent_delegate_not_allowed")
 
   if (params.parentTask) {
+    if (params.parentTask.resource && params.parentTask.resource.ownerUserId !== params.parentTask.userId) {
+      throw new Error("parent_resource_owner_mismatch")
+    }
+    if (params.resource && params.resource.ownerUserId !== params.userId) {
+      throw new Error("resource_owner_mismatch")
+    }
     if (params.parentTaskId !== params.parentTask.id) throw new Error("parent_task_id_mismatch")
     if (params.parentTask.userId !== params.userId) throw new Error("cross_user_delegation")
     if (params.parentTask.target !== params.issuer) throw new Error("parent_issuer_mismatch")
