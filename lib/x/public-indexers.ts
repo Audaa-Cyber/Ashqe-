@@ -30,7 +30,7 @@ function normalizeTweet(input: any): XTweet {
 }
 
 export function availablePublicIndexers(): PublicIndexer[] {
-  const providers: PublicIndexer[] = ["fetcher", "fxtwitter"]
+  const providers: PublicIndexer[] = process.env.ASHQE_X_PUBLIC_DATA_KEY ? ["fetcher", "fxtwitter"] : ["fxtwitter"]
   if (process.env.SOCIALDATA_API_KEY) providers.push("socialdata")
   if (process.env.TWEXAPI_API_KEY) providers.push("twexapi")
   if (process.env.RELAYX_API_KEY) providers.push("relayx")
