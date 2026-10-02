@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ArrowRight, Check, Loader2, Sparkles } from "lucide-react"
 import DnaCard, { type DnaProfile } from "./dna-card"
 import { CloneOrbit } from "./clone-orbit"
+import { SplitText } from "@/components/ui/split-text"
 
 type Style = Omit<DnaProfile, "username" | "name"> & { updated_at?: string | null }
 type Phase = "clone" | "conversation" | "dna" | "finish"
@@ -181,7 +182,7 @@ export default function OnboardingFlow({
 
             <div className="mt-10 text-center">
               <div className="ashqe-mono text-[10px] tracking-[.2em] text-white/35">CLONING / @{username}</div>
-              <h1 className="ashqe-display text-4xl sm:text-6xl mt-4 leading-none">I’m learning your signal.</h1>
+              <h1 className="ashqe-display text-4xl sm:text-6xl mt-4 leading-none"><SplitText text="I’m learning your signal." /></h1>
               <p className="mt-5 text-white/45 min-h-6">{cloneSteps[cloneIndex]}…</p>
             </div>
 
