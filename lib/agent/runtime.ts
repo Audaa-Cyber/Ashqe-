@@ -15,17 +15,20 @@ export type AgentRuntimeOptions = {
   handlers: AgentHandlerMap
   emit?: (event: AgentRuntimeEvent) => void | Promise<void>
   maxSteps?: number
+  timeoutMs?: number
 }
 
 export class AgentRuntime {
   private readonly graph
   private readonly emit
   private readonly maxSteps
+  private readonly timeoutMs
 
   constructor(options: AgentRuntimeOptions) {
     this.graph = buildAgentWorkflow(options.handlers)
     this.emit = options.emit ?? (() => undefined)
     this.maxSteps = Math.max(1, Math.min(options.maxSteps ?? 12, 50))
+    this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
   }
 
   async dispatch(task: AgentTask): Promise<AgentResult> {
@@ -39,7 +42,10 @@ export class AgentRuntime {
     await this.emit({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() })
 
     try {
-      const result = await this.graph.invoke({ task, status: "running" }, { recursionLimit: this.maxSteps })
+      const result = await Promise.race([
+        this.graph.invoke({ task, status: "running" }, { recursionLimit: this.maxSteps }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("agent_runtime_timeout")), this.timeoutMs)),
+      ])
 
       if (result.status === "blocked") {
         await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: result.blockedReason ?? "agent_blocked" })
