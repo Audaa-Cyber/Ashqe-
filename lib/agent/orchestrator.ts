@@ -40,6 +40,7 @@ export type TaskFactoryInput = {
   goal: string
   input?: Record<string, unknown>
   allowedTools?: string[]
+  resource?: AgentTask["resource"]
   risk: AgentTask["risk"]
   parentTaskId?: string | null
   now?: number
