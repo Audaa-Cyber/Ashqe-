@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { authorizeAutonomousAction } from "../execution-policy"
 import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint"
 import type { AgentResult, AgentTask } from "./contracts"
 import { authorizeAgentTask, blockedResult, createAgentTask } from "./orchestrator"
@@ -119,4 +120,23 @@ export class AgentRuntime {
   }
 
   createTask = createAgentTask
+}
+
+export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
+  return async (task: AgentTask) => {
+    if (task.target !== "operator") return { approved: true }
+    const actionType = task.input.actionType
+    if (actionType !== "post" && actionType !== "reply") {
+      return { approved: false, reason: "operator_action_type_required" }
+    }
+
+    const result = await authorizeAutonomousAction(supabase, task.userId, actionType, {
+      targetId: typeof task.input.targetId === "string" ? task.input.targetId : undefined,
+      recipientOptedIn: task.input.recipientOptedIn === true,
+      aiReplyApproved: task.input.aiReplyApproved === true,
+      timezone: typeof task.input.timezone === "string" ? task.input.timezone : undefined,
+    })
+
+    return { approved: result.allowed, reason: result.reason }
+  }
 }
