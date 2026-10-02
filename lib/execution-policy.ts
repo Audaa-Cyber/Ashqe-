@@ -41,7 +41,7 @@ export async function authorizeAutonomousAction(
   supabase: SupabaseClient,
   userId: string,
   actionType: "post" | "reply",
-  opts: { targetId?: string; recipientOptedIn?: boolean; aiReplyApproved?: boolean; timezone?: string } = {},
+  opts: { targetId?: string; recipientOptedIn?: boolean; aiReplyApproved?: boolean; timezone?: string; taskId?: string } = {},
 ) {
   const policy = await getExecutionPolicy(supabase, userId)
   let reason = "policy_passed"
@@ -53,12 +53,22 @@ export async function authorizeAutonomousAction(
   else if (actionType === "reply" && policy.require_reply_opt_in && !opts.recipientOptedIn) reason = "recipient_opt_in_required"
   else if (actionType === "reply" && policy.require_ai_reply_approval && !opts.aiReplyApproved) reason = "x_ai_reply_approval_required"
   else {
-    const { data: reservationId, error } = await supabase.rpc("ashqe_claim_autonomous_action", {
-      p_user_id: userId,
-      p_action_type: actionType,
-      p_target_id: opts.targetId ?? null,
-      p_policy: policy,
-    })
+    const rpcName = opts.taskId ? "ashqe_claim_agent_action" : "ashqe_claim_autonomous_action"
+    const rpcArgs = opts.taskId
+      ? {
+          p_user_id: userId,
+          p_task_id: opts.taskId,
+          p_action_type: actionType,
+          p_target_id: opts.targetId ?? null,
+          p_policy: policy,
+        }
+      : {
+          p_user_id: userId,
+          p_action_type: actionType,
+          p_target_id: opts.targetId ?? null,
+          p_policy: policy,
+        }
+    const { data: reservationId, error } = await supabase.rpc(rpcName, rpcArgs)
     if (!error && reservationId) return { allowed: true, reason, policy, reservationId: String(reservationId) }
     reason = error ? "action_claim_failed" : "daily_limit_reached"
   }
