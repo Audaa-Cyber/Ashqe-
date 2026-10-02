@@ -34,6 +34,7 @@ function verifyTaskSignature(task: AgentTask) {
 }
 
 type AgentCapability = AgentTask["allowedTools"][number]
+export type TaskFactoryInput = {
 
   userId: string
   issuer: AgentId
