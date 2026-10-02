@@ -100,6 +100,10 @@ export function authorizeAgentTask(task: AgentTask, now = Date.now()) {
   return validateTaskBoundary(parsed.data, issuer, now)
 }
 
+export function verifyAgentTaskSignature(task: AgentTask) {
+  return verifyTaskSignature(task)
+}
+
 export function blockedResult(taskId: string, agent: AgentId, risk: AgentTask["risk"], reason: string): AgentResult {
   return { taskId, agent, status: "blocked", reason, risk, createdAt: Date.now() }
 }
