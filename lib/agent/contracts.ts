@@ -35,6 +35,7 @@ export const AgentTaskSchema = z.object({
   risk: z.enum(RISK_LEVELS),
   expiresAt: z.number().int().positive(),
   nonce: z.string().min(16).max(128),
+  signature: z.string().regex(/^[a-f0-9]{64}$/),
   depth: z.number().int().nonnegative().max(32).default(0),
 })
 
