@@ -4,7 +4,7 @@ const definitions: Record<AgentId, AgentDefinition> = {
   orchestrator: {
     id: "orchestrator",
     trust: "system",
-    // The orchestrator coordinates; it does not directly mutate X or memory.
+    // The orchestrator coordinates and may request narrowly-scoped Operator writes.
     allowedTools: ["research.read", "memory.read", "x.read.profile", "x.read.timeline", "x.read.post", "content.generate", "analytics.read", "x.write.post", "x.write.reply"],
     allowedDelegates: ["research", "conversation", "voice", "content", "critic", "opportunity", "trend", "relationship", "analytics", "operator", "memory"],
     maxTaskDepth: 8,
@@ -61,14 +61,14 @@ const definitions: Record<AgentId, AgentDefinition> = {
   relationship: {
     id: "relationship",
     trust: "internal",
-    allowedTools: ["x.read", "memory.read"],
+    allowedTools: ["x.read.profile", "x.read.timeline", "x.read.post", "memory.read"],
     allowedDelegates: [],
     maxTaskDepth: 1,
   },
   analytics: {
     id: "analytics",
     trust: "internal",
-    allowedTools: ["x.read", "analytics.read", "memory.read"],
+    allowedTools: ["x.read.profile", "x.read.timeline", "x.read.post", "analytics.read", "memory.read"],
     allowedDelegates: [],
     maxTaskDepth: 1,
   },
