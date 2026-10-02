@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { ArrowRight, Check, Loader2, Sparkles } from "lucide-react"
 import DnaCard, { type DnaProfile } from "./dna-card"
+import { CloneOrbit } from "./clone-orbit"
 
 type Style = Omit<DnaProfile, "username" | "name"> & { updated_at?: string | null }
 type Phase = "clone" | "conversation" | "dna" | "finish"
@@ -174,19 +175,8 @@ export default function OnboardingFlow({
               <span>{Math.round(clonePercent)}%</span>
             </div>
 
-            <div className="mt-10 flex justify-center">
-              <div className="relative h-64 w-64 sm:h-80 sm:w-80 flex items-center justify-center">
-                <div className="absolute inset-8 border border-white/15 rounded-full animate-[spin_10s_linear_infinite]" />
-                <div className="absolute inset-14 border border-white/20 rounded-full animate-[spin_6s_linear_infinite_reverse]" />
-                <div className="absolute inset-20 border border-white/25 rounded-full animate-pulse" />
-                <div className="absolute h-28 w-28 border border-white/30 rotate-45 animate-[spin_8s_linear_infinite]" />
-                <div className="relative h-20 w-20 bg-white text-black flex items-center justify-center shadow-[0_0_80px_rgba(255,255,255,.12)]">
-                  <span className="ashqe-display text-2xl">A<span className="text-black/40">.</span></span>
-                </div>
-                {[0,1,2,3,4,5].map((i) => (
-                  <span key={i} className="absolute h-1.5 w-1.5 bg-white/70 rounded-full animate-ping" style={{ transform: `rotate(${i * 60}deg) translateY(-132px)`, animationDelay: `${i * 180}ms` }} />
-                ))}
-              </div>
+            <div className="mt-8 flex justify-center">
+              <CloneOrbit username={username} progress={clonePercent} step={cloneIndex} />
             </div>
 
             <div className="mt-10 text-center">
