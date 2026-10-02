@@ -59,7 +59,8 @@ export async function settleAgentReservation(
     p_user_id: task.userId,
     p_status: status,
   })
-  if (error || data !== true) throw new Error("agent_reservation_settle_failed")
+  if (error) throw new Error("agent_reservation_settle_failed")
+  return data === true
 }
 
 
