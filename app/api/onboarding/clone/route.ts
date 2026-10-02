@@ -13,7 +13,7 @@ export async function POST() {
 
   const { data: connection, error: connectionError } = await supabase
     .from("x_connections")
-    .select("x_username, x_name, recent_posts")
+    .select("x_user_id, x_username, x_name, recent_posts")
     .eq("user_id", user.id)
     .maybeSingle()
 
