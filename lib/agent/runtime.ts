@@ -181,11 +181,33 @@ export class AgentRuntime {
       }
 
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "completed", output: result.outputs[task.target], risk: task.risk, createdAt: Date.now() }
-      await this.publish({ type: "task.completed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task, finalResult)
+
+      // A completed Operator handler means the external X side effect has already
+      // happened. Settle the reservation before non-essential lifecycle publishing;
+      // never release a reservation after an external write has succeeded.
       if (actionReservationId && this.supabase) {
         const { settleAgentReservation } = await import("./persistence")
-        await settleAgentReservation(this.supabase, task, "executed")
+        try {
+          await settleAgentReservation(this.supabase, task, "executed")
+        } catch {
+          const settlementFailure: AgentResult = {
+            taskId: task.id,
+            agent: task.target,
+            status: "failed",
+            reason: "agent_reservation_settlement_failed_after_side_effect",
+            risk: task.risk,
+            createdAt: Date.now(),
+          }
+          await this.publish(
+            { type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: settlementFailure.reason },
+            task,
+            settlementFailure,
+          )
+          return settlementFailure
+        }
       }
+
+      await this.publish({ type: "task.completed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task, finalResult)
       return finalResult
     } catch (error) {
       const reason = controller.signal.aborted ? "agent_runtime_timeout" : error instanceof Error ? error.message : "agent_runtime_error"
