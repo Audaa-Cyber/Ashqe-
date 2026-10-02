@@ -1,6 +1,6 @@
 import type { XTweet } from "./api"
 
-export type PublicIndexer = "fxtwitter" | "socialdata" | "twexapi" | "relayx"
+export type PublicIndexer = "fetcher" | "fxtwitter" | "socialdata" | "twexapi" | "relayx"
 
 export interface PublicSearchResult { tweets: XTweet[]; provider: PublicIndexer; nextCursor?: string }
 
@@ -30,7 +30,7 @@ function normalizeTweet(input: any): XTweet {
 }
 
 export function availablePublicIndexers(): PublicIndexer[] {
-  const providers: PublicIndexer[] = ["fxtwitter"]
+  const providers: PublicIndexer[] = ["fetcher", "fxtwitter"]
   if (process.env.SOCIALDATA_API_KEY) providers.push("socialdata")
   if (process.env.TWEXAPI_API_KEY) providers.push("twexapi")
   if (process.env.RELAYX_API_KEY) providers.push("relayx")
@@ -46,6 +46,20 @@ async function readJson(res: Response, provider: string) {
 
 async function request(url: URL | string, init: RequestInit = {}) {
   return fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS), cache: "no-store" })
+}
+
+async function fetcherRequest(path: string, params: Record<string, string> = {}) {
+  const url = new URL("https://twitter.fetcher.sh" + path)
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
+  const headers: HeadersInit = { Accept: "application/json" }
+  if (process.env.ASHQE_X_PUBLIC_DATA_KEY) headers.Authorization = `Bearer ${process.env.ASHQE_X_PUBLIC_DATA_KEY}`
+  return readJson(await request(url, { headers }), "Fetcher")
+}
+
+async function fetcherSearch(query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
+  const json = await fetcherRequest("/api/search", { query, sort: "Latest", ...(cursor ? { cursor } : {}) })
+  const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
+  return { tweets: raw.slice(0, max).map(normalizeTweet).filter((tweet) => tweet.id && tweet.text), provider: "fetcher", nextCursor: json?.cursor ?? json?.meta?.next_token }
 }
 
 async function searchFromProvider(provider: PublicIndexer, query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
@@ -126,4 +140,12 @@ export async function searchPublicTweetsAcrossProviders(query: string, maxPerPro
   }
   if (!successfulProviders.length) throw new Error("All configured public X indexers failed")
   return { tweets: [...tweetsById.values()], providers: [...new Set(successfulProviders)], cursors, failures }
+}
+
+
+export async function fetchPublicTweetsFromIndexer(userId: string, max = 100): Promise<XTweet[]> {
+  const cleanId = encodeURIComponent(userId.trim())
+  const json = await fetcherRequest(`/api/user/${cleanId}/tweets`)
+  const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
+  return raw.slice(0, Math.min(Math.max(max, 1), 100)).map(normalizeTweet).filter((tweet) => tweet.id && tweet.text)
 }
