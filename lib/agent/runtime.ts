@@ -132,7 +132,28 @@ export class AgentRuntime {
         } catch {
           const reason = "agent_reservation_attach_failed"
           const { releaseAgentReservation } = await import("./persistence")
-          await releaseAgentReservation(this.supabase, task, actionReservationId)
+          try {
+            await releaseAgentReservation(this.supabase, task, actionReservationId)
+          } catch {
+            const failure: AgentResult = {
+              taskId: task.id,
+              agent: task.target,
+              status: "failed",
+              reason: "agent_reservation_release_failed_after_attach_failure",
+              risk: task.risk,
+              createdAt: Date.now(),
+            }
+            try {
+              await this.publish(
+                { type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: failure.reason },
+                task,
+                failure,
+              )
+            } catch {
+              // Preserve the active reservation rather than falsely reporting it released.
+            }
+            return failure
+          }
           const result = blockedResult(task.id, task.target, task.risk, reason)
           await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
           return result
