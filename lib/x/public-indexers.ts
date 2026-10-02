@@ -60,7 +60,7 @@ async function fetcherRequest(path: string, params: Record<string, string> = {})
 async function fetcherSearch(query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
   const json = await fetcherRequest("/api/search", { query, sort: "Latest", ...(cursor ? { cursor } : {}) })
   const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
-  return { tweets: raw.slice(0, max).map(normalizeTweet).filter((tweet) => tweet.id && tweet.text), provider: "fetcher", nextCursor: json?.cursor ?? json?.meta?.next_token }
+  return { tweets: raw.slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet) => tweet.id && tweet.text), provider: "fetcher", nextCursor: json?.cursor ?? json?.meta?.next_token }
 }
 
 async function searchFromProvider(provider: PublicIndexer, query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
