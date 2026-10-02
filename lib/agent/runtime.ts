@@ -53,7 +53,7 @@ export class AgentRuntime {
     const authorization = authorizeAgentTask(task)
     if (!authorization.allowed) {
       const result = blockedResult(task.id, task.target, task.risk, authorization.reason)
-      await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason }, task, result)
+      await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason })
       return result
     }
 
@@ -61,7 +61,7 @@ export class AgentRuntime {
       const claim = await claimAgentTask(this.supabase, task)
       if (!claim.claimed) {
         const result = blockedResult(task.id, task.target, task.risk, claim.reason)
-        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: claim.reason }, task, result)
+        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: claim.reason })
         return result
       }
     }
