@@ -1,5 +1,5 @@
 import { END, START, StateGraph } from "@langchain/langgraph"
-import type { AgentTask, AgentResult } from "../contracts"
+import type { AgentResult, AgentTask } from "../contracts"
 import { AshqeGraphState, type AshqeGraphStateValue } from "./state"
 
 export type AgentHandler = (task: AgentTask, state: AshqeGraphStateValue) => Promise<AgentResult> | AgentResult
@@ -8,7 +8,7 @@ export type AgentHandlerMap = Partial<Record<AgentTask["target"], AgentHandler>>
 export function buildAgentWorkflow(handlers: AgentHandlerMap) {
   const workflow = new StateGraph(AshqeGraphState)
     .addNode("dispatch", async (state) => {
-      const task = stateToTask(state)
+      const task = state.task
       const handler = handlers[task.target]
       if (!handler) {
         return { status: "blocked" as const, blockedReason: "agent_handler_unregistered" }
@@ -27,30 +27,4 @@ export function buildAgentWorkflow(handlers: AgentHandlerMap) {
     .addEdge("dispatch", END)
 
   return workflow.compile()
-}
-
-function stateToTask(state: AshqeGraphStateValue): AgentTask {
-  return {
-    id: state.taskId,
-    parentTaskId: null,
-    userId: state.userId,
-    issuer: "orchestrator",
-    target: inferTarget(state),
-    goal: state.goal,
-    input: state.input,
-    allowedTools: [],
-    risk: "low",
-    expiresAt: Date.now() + 60_000,
-    nonce: state.taskId,
-  }
-}
-
-function inferTarget(state: AshqeGraphStateValue): AgentTask["target"] {
-  const target = Object.keys(state.input).find((key) => key === "agent")
-  const value = target ? state.input[target] : undefined
-  if (typeof value === "string") {
-    const allowed = ["research", "conversation", "voice", "content", "critic", "opportunity", "trend", "relationship", "analytics", "operator", "memory"] as const
-    if ((allowed as readonly string[]).includes(value)) return value as AgentTask["target"]
-  }
-  return "research"
 }
