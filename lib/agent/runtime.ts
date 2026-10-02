@@ -102,6 +102,7 @@ export class AgentRuntime {
     }
 
     let actionReservationId: string | null = null
+    let actionReservationSettled = false
 
     if (isOperatorAction(task) && this.policyApprove) {
       const policyApproval = await this.policyApprove(task)
@@ -189,6 +190,7 @@ export class AgentRuntime {
         const { settleAgentReservation } = await import("./persistence")
         try {
           await settleAgentReservation(this.supabase, task, "executed")
+          actionReservationSettled = true
         } catch {
           const settlementFailure: AgentResult = {
             taskId: task.id,
@@ -213,7 +215,7 @@ export class AgentRuntime {
       const reason = controller.signal.aborted ? "agent_runtime_timeout" : error instanceof Error ? error.message : "agent_runtime_error"
       const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
       await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, finalResult)
-      if (actionReservationId && this.supabase) {
+      if (actionReservationId && this.supabase && !actionReservationSettled) {
         const { settleAgentReservation } = await import("./persistence")
         await settleAgentReservation(this.supabase, task, "released")
       }
