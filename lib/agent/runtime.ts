@@ -21,6 +21,7 @@ export type AgentRuntimeOptions = {
   timeoutMs?: number
   supabase?: SupabaseClient
   checkpointer?: BaseCheckpointSaver
+  approve?: (task: AgentTask) => Promise<{ approved: boolean; reason?: string }> | { approved: boolean; reason?: string }
 }
 
 export class AgentRuntime {
@@ -30,6 +31,7 @@ export class AgentRuntime {
   private readonly timeoutMs
   private readonly supabase
   private readonly checkpointer
+  private readonly approve
 
   constructor(options: AgentRuntimeOptions) {
     this.emit = options.emit ?? (() => undefined)
@@ -37,6 +39,7 @@ export class AgentRuntime {
     this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
     this.supabase = options.supabase
     this.checkpointer = options.checkpointer
+    this.approve = options.approve
     this.graph = buildAgentWorkflow(options.handlers, this.checkpointer)
   }
 
@@ -59,6 +62,20 @@ export class AgentRuntime {
       const result = blockedResult(task.id, task.target, task.risk, authorization.reason)
       await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason })
       return result
+    }
+
+    if (task.risk !== "low") {
+      if (!this.approve) {
+        const reason = "approval_required"
+        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
+        return blockedResult(task.id, task.target, task.risk, reason)
+      }
+      const approval = await this.approve(task)
+      if (!approval.approved) {
+        const reason = approval.reason ?? "approval_denied"
+        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
+        return blockedResult(task.id, task.target, task.risk, reason)
+      }
     }
 
     if (this.supabase) {
