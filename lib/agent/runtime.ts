@@ -140,13 +140,17 @@ export class AgentRuntime {
       }
     }
 
-    await this.publish({ type: "task.authorized", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
-    await this.publish({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
-
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(new Error("agent_runtime_timeout")), this.timeoutMs)
+    let timeout: ReturnType<typeof setTimeout> | undefined
 
     try {
+      // Keep lifecycle publication inside the same failure boundary as execution.
+      // If persistence fails after a reservation was attached, the catch path
+      // must still be able to release that reservation before returning.
+      await this.publish({ type: "task.authorized", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
+      await this.publish({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
+
+      timeout = setTimeout(() => controller.abort(new Error("agent_runtime_timeout")), this.timeoutMs)
       if (actionReservationId && this.supabase && isOperatorAction(task)) {
         const actionType = task.input.actionType
         if (actionType !== "post" && actionType !== "reply") {
@@ -251,7 +255,7 @@ export class AgentRuntime {
       }
       return finalResult
     } finally {
-      clearTimeout(timeout)
+      if (timeout) clearTimeout(timeout)
       if (!controller.signal.aborted) controller.abort()
     }
   }
