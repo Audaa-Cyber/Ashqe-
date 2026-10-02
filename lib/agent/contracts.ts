@@ -40,6 +40,12 @@ export const CAPABILITIES = [
 ] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
+export const AgentResourceScopeSchema = z.object({
+  ownerUserId: z.string().min(1),
+  targetId: z.string().min(1).max(512).optional(),
+}).strict()
+export type AgentResourceScope = z.infer<typeof AgentResourceScopeSchema>
+
 export const AgentTaskSchema = z.object({
   id: z.string().uuid(),
   parentTaskId: z.string().uuid().nullable(),
@@ -49,6 +55,7 @@ export const AgentTaskSchema = z.object({
   goal: z.string().trim().min(1).max(4000),
   input: z.record(z.string(), z.unknown()).default({}),
   allowedTools: z.array(z.enum(CAPABILITIES)).max(50).default([]),
+  resource: AgentResourceScopeSchema.optional(),
   risk: z.enum(RISK_LEVELS),
   expiresAt: z.number().int().positive(),
   nonce: z.string().min(16).max(128),
@@ -89,8 +96,20 @@ export function validateTaskBoundary(task: AgentTask, definition: AgentDefinitio
   if (task.allowedTools.some((tool) => !definition.allowedTools.includes(tool))) {
     return { allowed: false, reason: "tool_outside_agent_scope" as const }
   }
-  if (task.target === "operator" && task.risk === "low") {
-    return { allowed: false, reason: "operator_write_requires_elevated_risk" as const }
+  if (task.target === "operator") {
+    if (task.risk === "low") {
+      return { allowed: false, reason: "operator_write_requires_elevated_risk" as const }
+    }
+    if (!task.resource || task.resource.ownerUserId !== task.userId) {
+      return { allowed: false, reason: "operator_resource_owner_mismatch" as const }
+    }
+    const writes = task.allowedTools.filter((tool) => tool === "x.write.post" || tool === "x.write.reply")
+    if (writes.length !== task.allowedTools.length) {
+      return { allowed: false, reason: "operator_capability_scope_invalid" as const }
+    }
+    if (writes.includes("x.write.reply") && !task.resource.targetId) {
+      return { allowed: false, reason: "operator_reply_target_required" as const }
+    }
   }
   return { allowed: true as const }
 }
