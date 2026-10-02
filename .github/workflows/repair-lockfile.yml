@@ -1,0 +1,42 @@
+name: Repair lockfile (temporary)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.repository }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Regenerate lockfile
+        run: pnpm install --lockfile-only
+
+      - name: Commit regenerated lockfile and remove temporary workflow
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "Lockfile already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git rm .github/workflows/repair-lockfile.yml
+          git commit -m "chore: sync pnpm lockfile"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
