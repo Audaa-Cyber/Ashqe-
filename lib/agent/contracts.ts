@@ -138,8 +138,9 @@ export function validateTaskBoundary(task: AgentTask, definition: AgentDefinitio
     if (writes.length !== task.allowedTools.length) {
       return { allowed: false, reason: "operator_capability_scope_invalid" as const }
     }
-    if (writes.includes("x.write.reply") && !task.resource.targetId) {
-      return { allowed: false, reason: "operator_reply_target_required" as const }
+    const actionContract = validateOperatorAction(task)
+    if (!actionContract.allowed) {
+      return { allowed: false, reason: actionContract.reason }
     }
   }
   return { allowed: true as const }
