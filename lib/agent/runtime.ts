@@ -118,8 +118,8 @@ export class AgentRuntime {
           await attachAgentReservation(this.supabase, task, actionReservationId)
         } catch {
           const reason = "agent_reservation_attach_failed"
-          const { settleAgentReservation } = await import("./persistence")
-          await settleAgentReservation(this.supabase, task, "released")
+          const { releaseAgentReservation } = await import("./persistence")
+          await releaseAgentReservation(this.supabase, task, actionReservationId)
           const result = blockedResult(task.id, task.target, task.risk, reason)
           await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
           return result
