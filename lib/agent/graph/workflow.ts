@@ -1,3 +1,4 @@
+import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint"
 import { END, START, StateGraph } from "@langchain/langgraph"
 import type { AgentResult, AgentTask } from "../contracts"
 import { AshqeGraphState, type AshqeGraphStateValue } from "./state"
@@ -5,7 +6,7 @@ import { AshqeGraphState, type AshqeGraphStateValue } from "./state"
 export type AgentHandler = (task: AgentTask, state: AshqeGraphStateValue) => Promise<AgentResult> | AgentResult
 export type AgentHandlerMap = Partial<Record<AgentTask["target"], AgentHandler>>
 
-export function buildAgentWorkflow(handlers: AgentHandlerMap) {
+export function buildAgentWorkflow(handlers: AgentHandlerMap, checkpointer?: BaseCheckpointSaver) {
   const workflow = new StateGraph(AshqeGraphState)
     .addNode("dispatch", async (state) => {
       const task = state.task
@@ -26,5 +27,5 @@ export function buildAgentWorkflow(handlers: AgentHandlerMap) {
     .addEdge(START, "dispatch")
     .addEdge("dispatch", END)
 
-  return workflow.compile()
+  return workflow.compile(checkpointer ? { checkpointer } : undefined)
 }
