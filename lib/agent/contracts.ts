@@ -23,6 +23,23 @@ export type TrustLevel = (typeof TRUST_LEVELS)[number]
 export const RISK_LEVELS = ["low", "medium", "high", "critical"] as const
 export type RiskLevel = (typeof RISK_LEVELS)[number]
 
+export const CAPABILITIES = [
+  "research.read",
+  "memory.read",
+  "memory.write",
+  "x.read.profile",
+  "x.read.timeline",
+  "x.read.post",
+  "x.write.post",
+  "x.write.reply",
+  "web.read",
+  "style.read",
+  "content.generate",
+  "content.inspect",
+  "analytics.read",
+] as const
+export type Capability = (typeof CAPABILITIES)[number]
+
 export const AgentTaskSchema = z.object({
   id: z.string().uuid(),
   parentTaskId: z.string().uuid().nullable(),
@@ -31,7 +48,7 @@ export const AgentTaskSchema = z.object({
   target: z.enum(AGENT_IDS),
   goal: z.string().trim().min(1).max(4000),
   input: z.record(z.string(), z.unknown()).default({}),
-  allowedTools: z.array(z.string()).max(50).default([]),
+  allowedTools: z.array(z.enum(CAPABILITIES)).max(50).default([]),
   risk: z.enum(RISK_LEVELS),
   expiresAt: z.number().int().positive(),
   nonce: z.string().min(16).max(128),
@@ -72,7 +89,7 @@ export function validateTaskBoundary(task: AgentTask, definition: AgentDefinitio
   if (task.allowedTools.some((tool) => !definition.allowedTools.includes(tool))) {
     return { allowed: false, reason: "tool_outside_agent_scope" as const }
   }
-  if (task.target === "operator" && task.allowedTools.includes("x.write") && task.risk === "low") {
+  if (task.target === "operator" && task.risk === "low") {
     return { allowed: false, reason: "operator_write_requires_elevated_risk" as const }
   }
   return { allowed: true as const }
