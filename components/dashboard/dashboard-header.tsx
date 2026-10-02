@@ -41,7 +41,7 @@ export default function DashboardHeader({ user, connection }: Props) {
               type="button"
               onClick={() => setOpen((v) => !v)}
               className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center font-semibold text-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-foreground"
-              aria-label="Account menu"
+              aria-label="Account menu" aria-expanded={open} aria-haspopup="menu" aria-controls="account-menu"
             >
               {connection.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -51,12 +51,12 @@ export default function DashboardHeader({ user, connection }: Props) {
               )}
             </button>
             {open && (
-              <div className="absolute right-0 mt-2 w-56 border border-border bg-background p-2 p-2 text-sm">
+              <div id="account-menu" role="menu" className="absolute right-0 mt-2 w-56 border border-border bg-background p-2 text-sm">
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-xs text-muted-foreground">Signed in as</p>
                   <p className="font-medium truncate">{user.email}</p>
                 </div>
-                <Link href="/api/privacy/export" className="block px-3 py-2 hover:bg-secondary">Export data</Link>
+                <Link href="/api/privacy/export" role="menuitem" className="block px-3 py-2 hover:bg-secondary">Export data</Link>
                 <button
                   type="button"
                   onClick={async () => {
@@ -69,7 +69,7 @@ export default function DashboardHeader({ user, connection }: Props) {
                 >
                   Sign out
                 </button>
-                <button type="button" onClick={async()=>{if(window.prompt("Type DELETE MY ACCOUNT to permanently delete your Ashqe account and data.")!=="DELETE MY ACCOUNT")return;const r=await fetch("/api/privacy/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE MY ACCOUNT"})});if(r.ok)window.location.href="/";}} className="w-full text-left px-3 py-2 hover:bg-white/10 text-white">Delete account</button>
+                <button type="button" onClick={async()=>{if(window.prompt("Type DELETE MY ACCOUNT to permanently delete your Ashqe account and data.")!=="DELETE MY ACCOUNT")return;const r=await fetch("/api/privacy/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE MY ACCOUNT"})});if(r.ok)window.location.href="/";}} role="menuitem" className="w-full text-left px-3 py-2 hover:bg-white/10 text-white">Delete account</button>
               </div>
             )}
           </div>
