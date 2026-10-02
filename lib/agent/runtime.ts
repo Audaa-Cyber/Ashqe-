@@ -1,6 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import type { AgentResult, AgentTask } from "./contracts"
 import { authorizeAgentTask, blockedResult, createAgentTask } from "./orchestrator"
 import { buildAgentWorkflow, type AgentHandlerMap } from "./graph/workflow"
+import { claimAgentTask } from "./idempotency"
 
 export type AgentRuntimeEvent = {
   type: "task.authorized" | "task.blocked" | "task.started" | "task.completed" | "task.failed"
@@ -16,6 +18,7 @@ export type AgentRuntimeOptions = {
   emit?: (event: AgentRuntimeEvent) => void | Promise<void>
   maxSteps?: number
   timeoutMs?: number
+  supabase?: SupabaseClient
 }
 
 export class AgentRuntime {
@@ -23,23 +26,48 @@ export class AgentRuntime {
   private readonly emit
   private readonly maxSteps
   private readonly timeoutMs
+  private readonly supabase
 
   constructor(options: AgentRuntimeOptions) {
     this.graph = buildAgentWorkflow(options.handlers)
     this.emit = options.emit ?? (() => undefined)
     this.maxSteps = Math.max(1, Math.min(options.maxSteps ?? 12, 50))
     this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
+    this.supabase = options.supabase
+  }
+
+  private async persist(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
+    if (!this.supabase) return
+    const { recordAgentEvent, startAgentRun, updateAgentRun } = await import("./persistence")
+    await recordAgentEvent(this.supabase, task, event)
+    if (event.type === "task.started") await startAgentRun(this.supabase, task)
+    if (result) await updateAgentRun(this.supabase, task, result)
+  }
+
+  private async publish(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
+    await this.emit(event)
+    await this.persist(event, task, result)
   }
 
   async dispatch(task: AgentTask): Promise<AgentResult> {
     const authorization = authorizeAgentTask(task)
     if (!authorization.allowed) {
-      await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason })
-      return blockedResult(task.id, task.target, task.risk, authorization.reason)
+      const result = blockedResult(task.id, task.target, task.risk, authorization.reason)
+      await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason }, task, result)
+      return result
     }
 
-    await this.emit({ type: "task.authorized", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() })
-    await this.emit({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() })
+    if (this.supabase) {
+      const claim = await claimAgentTask(this.supabase, task)
+      if (!claim.claimed) {
+        const result = blockedResult(task.id, task.target, task.risk, claim.reason)
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: claim.reason }, task, result)
+        return result
+      }
+    }
+
+    await this.publish({ type: "task.authorized", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
+    await this.publish({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
 
     try {
       const result = await Promise.race([
@@ -48,20 +76,24 @@ export class AgentRuntime {
       ])
 
       if (result.status === "blocked") {
-        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: result.blockedReason ?? "agent_blocked" })
-        return blockedResult(task.id, task.target, task.risk, result.blockedReason ?? "agent_blocked")
+        const finalResult = blockedResult(task.id, task.target, task.risk, result.blockedReason ?? "agent_blocked")
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+        return finalResult
       }
       if (result.status === "failed") {
-        await this.emit({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: result.blockedReason ?? "agent_failed" })
-        return { taskId: task.id, agent: task.target, status: "failed", reason: result.blockedReason ?? "agent_failed", risk: task.risk, createdAt: Date.now() }
+        const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason: result.blockedReason ?? "agent_failed", risk: task.risk, createdAt: Date.now() }
+        await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+        return finalResult
       }
 
-      await this.emit({ type: "task.completed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() })
-      return { taskId: task.id, agent: task.target, status: "completed", output: result.outputs[task.target], risk: task.risk, createdAt: Date.now() }
+      const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "completed", output: result.outputs[task.target], risk: task.risk, createdAt: Date.now() }
+      await this.publish({ type: "task.completed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task, finalResult)
+      return finalResult
     } catch (error) {
       const reason = error instanceof Error ? error.message : "agent_runtime_error"
-      await this.emit({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
-      return { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
+      const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
+      await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, finalResult)
+      return finalResult
     }
   }
 
