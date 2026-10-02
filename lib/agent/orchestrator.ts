@@ -33,13 +33,13 @@ function verifyTaskSignature(task: AgentTask) {
   }
 }
 
-export type TaskFactoryInput = {
+type AgentCapability = AgentTask["allowedTools"][number]\n\nexport type TaskFactoryInput = {
   userId: string
   issuer: AgentId
   target: AgentId
   goal: string
   input?: Record<string, unknown>
-  allowedTools?: string[]
+  allowedTools?: AgentCapability[]
   resource?: AgentTask["resource"]
   risk: AgentTask["risk"]
   parentTaskId?: string | null
