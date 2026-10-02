@@ -79,8 +79,9 @@ export class AgentRuntime {
     if (task.risk !== "low") {
       if (!this.approve) {
         const reason = "approval_required"
-        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
-        return blockedResult(task.id, task.target, task.risk, reason)
+        const result = blockedResult(task.id, task.target, task.risk, reason)
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
+        return result
       }
       const approval = await this.approve(task)
       if (!approval.approved) {
@@ -88,6 +89,14 @@ export class AgentRuntime {
         await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
         return blockedResult(task.id, task.target, task.risk, reason)
       }
+    }
+
+    const postApprovalAuthorization = authorizeAgentTask(task)
+    if (!postApprovalAuthorization.allowed) {
+      const reason = postApprovalAuthorization.reason
+      const result = blockedResult(task.id, task.target, task.risk, reason)
+      await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
+      return result
     }
 
     let actionReservationId: string | null = null
@@ -128,6 +137,10 @@ export class AgentRuntime {
       if (result.status === "failed") {
         const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason: result.blockedReason ?? "agent_failed", risk: task.risk, createdAt: Date.now() }
         await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+        if (actionReservationId && this.supabase) {
+          const { settleAgentReservation } = await import("./persistence")
+          await settleAgentReservation(this.supabase, task, "released")
+        }
         return finalResult
       }
 
