@@ -101,6 +101,20 @@ export function requiredOperatorCapability(actionType: unknown): Capability | nu
   return null
 }
 
+export function validateOperatorAction(task: AgentTask) {
+  if (!isOperatorAction(task)) return { allowed: false as const, reason: "not_operator_task" as const }
+  const actionType = task.input.actionType
+  const capability = requiredOperatorCapability(actionType)
+  if (!capability) return { allowed: false as const, reason: "operator_action_type_required" as const }
+  if (!task.allowedTools.includes(capability)) {
+    return { allowed: false as const, reason: "operator_capability_missing" as const }
+  }
+  if (actionType === "reply" && !task.resource?.targetId) {
+    return { allowed: false as const, reason: "operator_reply_target_required" as const }
+  }
+  return { allowed: true as const, capability }
+}
+
 export function validateTaskBoundary(task: AgentTask, definition: AgentDefinition, now = Date.now()) {
   if (task.resource && task.resource.ownerUserId !== task.userId) {
     return { allowed: false, reason: "resource_owner_mismatch" as const }
