@@ -72,5 +72,8 @@ export function validateTaskBoundary(task: AgentTask, definition: AgentDefinitio
   if (task.allowedTools.some((tool) => !definition.allowedTools.includes(tool))) {
     return { allowed: false, reason: "tool_outside_agent_scope" as const }
   }
+  if (task.target === "operator" && task.allowedTools.includes("x.write") && task.risk === "low") {
+    return { allowed: false, reason: "operator_write_requires_elevated_risk" as const }
+  }
   return { allowed: true as const }
 }
