@@ -269,8 +269,24 @@ function Research({research,setResearch,runResearch,result}:{research:string;set
 
 function Radar(){
   const [signals,setSignals]=useState<any[]>([])
-  useEffect(()=>{fetch("/api/signals").then(r=>r.ok?r.json():null).then(d=>setSignals(d?.signals??[]))},[])
-  return <div><SectionTitle eyebrow="RADAR" title="See movement before the crowd." sub="Signals are ranked from Ashqe's research and connected X context. Each signal keeps its evidence trail."/><div className="mt-8 flex justify-end"><button onClick={async()=>{await fetch("/api/x/sync",{method:"POST"});const r=await fetch("/api/signals");const d=await r.json();setSignals(d.signals??[])}} className="bg-white text-black px-4 py-2 text-xs font-semibold">Refresh live radar</button></div><div className="mt-4 border border-white/10 divide-y divide-white/10">{signals.length?signals.map((x,i)=><div key={x.id} className="p-5 flex justify-between gap-6"><div><div className="ashqe-mono text-[10px] text-[#ffffff]">SIGNAL {String(i+1).padStart(2,"0")} · {x.type}</div><div className="mt-2 font-medium">{x.title}</div><p className="mt-2 text-sm text-muted-foreground max-w-2xl">{x.summary}</p>{x.source_url&&<a className="text-xs text-[#ffffff] mt-3 inline-block" href={x.source_url} target="_blank" rel="noreferrer">Open source →</a>}</div><div className="ashqe-mono text-[10px] text-muted-foreground shrink-0">{x.confidence ?? 0}%</div></div>):<div className="p-8 text-sm text-muted-foreground">No signals yet. Run a deep research query and Ashqe will start building your radar.</div>}</div></div>
+  const [scanning,setScanning]=useState(false)
+  const [message,setMessage]=useState<string | null>(null)
+  const load=()=>fetch("/api/signals").then(r=>r.ok?r.json():null).then(d=>setSignals(d?.signals??[]))
+  useEffect(()=>{load()},[])
+  const scan=async()=>{
+    setScanning(true); setMessage(null)
+    try {
+      const res=await fetch("/api/radar/scan",{method:"POST"})
+      const data=await res.json().catch(()=>({}))
+      if(!res.ok) throw new Error(data.error||"Radar scan failed")
+      await load()
+      setMessage(data.count ? `Scan complete · ${data.count} new signals` : "Scan complete · no new signals")
+    } catch(error) { setMessage(error instanceof Error ? error.message : "Radar scan failed") }
+    finally { setScanning(false) }
+  }
+  return <div><SectionTitle eyebrow="RADAR" title="See movement before the crowd." sub="Ashqe turns the goals, interests and projects you asked it to remember into bounded public-X scans, then preserves the evidence trail."/>
+    <div className="mt-8 flex flex-wrap justify-end items-center gap-3"><span className="text-xs text-muted-foreground">{message}</span><button disabled={scanning} onClick={scan} className="bg-white text-black px-4 py-2 text-xs font-semibold">{scanning?"Scanning…":"Scan my radar"}</button></div>
+    <div className="mt-4 border border-white/10 divide-y divide-white/10">{signals.length?signals.map((x,i)=><div key={x.id} className="p-5 flex justify-between gap-6"><div><div className="ashqe-mono text-[10px] text-[#ffffff]">SIGNAL {String(i+1).padStart(2,"0")} · {x.type}</div><div className="mt-2 font-medium">{x.title}</div><p className="mt-2 text-sm text-muted-foreground max-w-2xl">{x.summary}</p>{x.source_url&&<a className="text-xs text-[#ffffff] mt-3 inline-block" href={x.source_url} target="_blank" rel="noreferrer">Open source →</a>}</div><div className="ashqe-mono text-[10px] text-muted-foreground shrink-0">{x.confidence ?? 0}%</div></div>):<div className="p-8 text-sm text-muted-foreground">No signals yet. Scan your radar and Ashqe will use your saved context to discover relevant public-X movement.</div>}</div></div>
 }
 
 function Growth({stats}:{stats:Props["stats"]}){
