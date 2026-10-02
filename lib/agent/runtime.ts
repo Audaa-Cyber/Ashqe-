@@ -332,6 +332,6 @@ export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
       timezone: typeof task.input.timezone === "string" ? task.input.timezone : undefined,
     })
 
-    return { approved: result.allowed, reason: result.reason, reservationId: result.reservationId }
+    return { approved: result.allowed, reason: result.reason, reservationId: result.reservationId ?? undefined }
   }
 }
