@@ -39,13 +39,7 @@ export class AgentRuntime {
     await this.emit({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() })
 
     try {
-      const result = await this.graph.invoke({
-        taskId: task.id,
-        userId: task.userId,
-        goal: task.goal,
-        input: { ...task.input, agent: task.target },
-        status: "running",
-      }, { recursionLimit: this.maxSteps })
+      const result = await this.graph.invoke({ task, status: "running" }, { recursionLimit: this.maxSteps })
 
       if (result.status === "blocked") {
         await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: result.blockedReason ?? "agent_blocked" })
