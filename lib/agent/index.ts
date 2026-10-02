@@ -6,3 +6,5 @@ export * from "./persistence"
 export * from "./idempotency"
 export * from "./graph/state"
 export * from "./graph/workflow"
+
+export * from "./operator-boundary"
