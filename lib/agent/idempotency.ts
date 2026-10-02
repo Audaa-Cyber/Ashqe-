@@ -14,6 +14,7 @@ export async function claimAgentTask(supabase: SupabaseClient, task: AgentTask) 
     goal: task.goal,
     input: task.input,
     depth: task.depth,
+    signature: task.signature,
     expires_at: new Date(task.expiresAt).toISOString(),
   }).select("id").maybeSingle()
 
