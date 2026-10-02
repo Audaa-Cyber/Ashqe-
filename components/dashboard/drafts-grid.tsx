@@ -28,7 +28,6 @@ export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDe
       toast.error("Too long for X (max 280 characters)")
       return
     }
-
     setBusy(draft.id)
     try {
       const res = await fetch("/api/x/post", {
@@ -38,13 +37,7 @@ export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDe
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error ?? "Failed to post")
-
-      onDraftUpdated({
-        ...draft,
-        status: "published",
-        x_post_id: json.id,
-        published_at: new Date().toISOString(),
-      })
+      onDraftUpdated({ ...draft, status: "published", x_post_id: json.id, published_at: new Date().toISOString() })
       toast.success("Posted to X", {
         action: json.url ? { label: "View", onClick: () => window.open(json.url, "_blank", "noopener,noreferrer") } : undefined,
       })
@@ -79,12 +72,9 @@ export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDe
           </p>
         </div>
       </div>
-
       {drafts.length === 0 ? (
         <div className="border border-border bg-secondary/30 p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            No drafts yet. Ask the agent for a post, then save or publish it.
-          </p>
+          <p className="text-sm text-muted-foreground">No drafts yet. Ask the agent for a post, then save or publish it.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -97,37 +87,20 @@ export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDe
                   </span>
                   <p className="text-xs text-muted-foreground">{relative(draft.created_at)}</p>
                 </div>
-
                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{draft.content}</p>
-
                 <div className="flex items-center gap-2 pt-2">
                   {draft.status === "published" && draft.x_post_id ? (
-                    <a
-                      href={`https://x.com/${username}/status/${draft.x_post_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm font-medium underline-offset-4 hover:underline"
-                    >
+                    <a href={`https://x.com/${username}/status/${draft.x_post_id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-medium underline-offset-4 hover:underline">
                       View on X
                     </a>
                   ) : (
-                    <button
-                      onClick={() => handlePost(draft)}
-                      disabled={busy === draft.id || draft.content.length > 280}
-                      className="bg-foreground text-background hover:bg-foreground/90 h-8 px-3 text-sm font-medium disabled:opacity-40"
-                    >
+                    <button onClick={() => handlePost(draft)} disabled={busy === draft.id || draft.content.length > 280} className="bg-foreground text-background hover:bg-foreground/90 h-8 px-3 text-sm font-medium disabled:opacity-40">
                       {busy === draft.id ? "Posting..." : "Post to X"}
                     </button>
                   )}
-
-                  <button
-                    onClick={() => handleDelete(draft)}
-                    disabled={busy === draft.id}
-                    className="h-8 px-3 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40"
-                  >
+                  <button onClick={() => handleDelete(draft)} disabled={busy === draft.id} className="h-8 px-3 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40">
                     {busy === draft.id ? "Working..." : "Delete"}
                   </button>
-
                   <span className={`ml-auto text-xs ${draft.content.length > 280 ? "text-destructive" : "text-muted-foreground"}`}>
                     {draft.content.length}/280
                   </span>
