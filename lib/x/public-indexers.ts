@@ -71,7 +71,10 @@ async function searchFromProvider(provider: PublicIndexer, query: string, max: n
     if (cursor) url.searchParams.set("cursor", cursor)
     const json = await readJson(await request(url, { headers: { Accept: "application/json" } }), "FxTwitter")
     const results = Array.isArray(json.results) ? json.results : []
-    return { tweets: results.filter((tweet: unknown) => {\n      const item = tweet as Record<string, unknown>\n      return item?.type === "status" && item?.id && typeof item?.text === "string"\n    }).slice(0, max).map(normalizeTweet), provider, nextCursor: json.cursor?.bottom ?? undefined }
+    return { tweets: results.filter((tweet: unknown) => {
+      const item = tweet as Record<string, unknown>
+      return item?.type === "status" && item?.id && typeof item?.text === "string"
+    }).slice(0, max).map(normalizeTweet), provider, nextCursor: json.cursor?.bottom ?? undefined }
   }
 
   if (provider === "socialdata") {
@@ -153,7 +156,7 @@ export async function fetchPublicTweetsFromIndexer(userId: string, max = 100): P
     url.searchParams.set("count", String(count))
     const json = await readJson(await request(url, { headers: { Accept: "application/json" } }), "FxTwitter")
     const raw = Array.isArray(json.results) ? json.results : []
-    const tweets = raw.map(normalizeTweet).filter((tweet) => tweet.id && tweet.text).slice(0, count)
+    const tweets = raw.map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet) => tweet.id && tweet.text).slice(0, count)
     if (tweets.length) return tweets
   } catch (error) {
     lastError = error
@@ -163,7 +166,7 @@ export async function fetchPublicTweetsFromIndexer(userId: string, max = 100): P
   try {
     const json = await fetcherRequest("/api/user/" + encodeURIComponent(userId) + "/tweets")
     const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
-    const tweets = raw.slice(0, count).map(normalizeTweet).filter((tweet) => tweet.id && tweet.text)
+    const tweets = raw.slice(0, count).map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet) => tweet.id && tweet.text)
     if (tweets.length) return tweets
   } catch (error) {
     lastError = error
