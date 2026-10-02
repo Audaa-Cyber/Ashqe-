@@ -10,7 +10,7 @@ export async function POST(){
   if(!user)return NextResponse.json({error:"unauthorized"},{status:401})
   const conn=await getValidAccessToken(supabase,user.id)
   if(!conn)return NextResponse.json({error:"x_not_connected"},{status:400})
-  const [tweets,mentions]=await Promise.all([fetchRecentTweets(conn.access_token,conn.x_user_id,100),fetchRecentMentions(conn.access_token,conn.x_user_id,100)])
+  const [tweets,mentions]=await Promise.all([fetchRecentTweets(conn.access_token,conn.x_user_id,100),fetchRecentMentions(conn.access_token,conn.x_username,100)])
   const style=await supabase.from("style_profiles").select("topics").eq("user_id",user.id).maybeSingle()
   const topics=Array.isArray(style.data?.topics)?style.data.topics.slice(0,3):[]
   let discovered:unknown[]=[]
