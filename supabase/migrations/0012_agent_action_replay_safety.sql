@@ -204,3 +204,39 @@ begin
   where task_id = p_task_id and user_id = p_user_id;
 end;
 $$;
+
+
+-- Final side-effect guard for Operator handlers.
+-- A write must still own an active reservation immediately before the external side effect.
+create or replace function public.ashqe_assert_agent_action_reservation(
+  p_task_id uuid,
+  p_user_id uuid,
+  p_action_type text,
+  p_target_id text default null
+) returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_reservation_id uuid;
+begin
+  if p_action_type not in ('post','reply') then return false; end if;
+
+  select ar.action_reservation_id into v_reservation_id
+  from public.ashqe_agent_runs ar
+  join public.ashqe_action_log al on al.id = ar.action_reservation_id
+  where ar.task_id = p_task_id
+    and ar.user_id = p_user_id
+    and ar.status = 'running'
+    and al.user_id = p_user_id
+    and al.action_type = p_action_type
+    and al.status = 'reserved'
+    and (p_target_id is null or al.target_id = p_target_id)
+  for update of al;
+
+  return v_reservation_id is not null;
+end;
+$$;
+
+revoke all on function public.ashqe_assert_agent_action_reservation(uuid,uuid,text,text) from public;
