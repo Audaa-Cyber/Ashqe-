@@ -23,3 +23,43 @@ create policy "users own agent runs" on public.ashqe_agent_runs for select using
 create policy "users own agent events" on public.ashqe_agent_events for select using (auth.uid() = user_id);
 drop trigger if exists ashqe_agent_runs_updated on public.ashqe_agent_runs;
 create trigger ashqe_agent_runs_updated before update on public.ashqe_agent_runs for each row execute function public.set_ashqe_updated_at();
+
+create or replace function public.ashqe_transition_agent_run(
+  p_task_id uuid,
+  p_user_id uuid,
+  p_status text,
+  p_output jsonb default null,
+  p_reason text default null
+)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  current_status text;
+begin
+  select status into current_status
+  from public.ashqe_agent_runs
+  where task_id = p_task_id and user_id = p_user_id
+  for update;
+
+  if current_status is null then raise exception 'agent_run_not_found'; end if;
+
+  if p_status = 'running' and current_status <> 'queued' then
+    raise exception 'invalid_agent_run_transition';
+  end if;
+
+  if p_status in ('completed','blocked','failed') and current_status <> 'running' then
+    raise exception 'invalid_agent_run_transition';
+  end if;
+
+  update public.ashqe_agent_runs
+  set status = p_status,
+      output = case when p_status in ('completed','blocked','failed') then p_output else output end,
+      reason = case when p_status in ('completed','blocked','failed') then p_reason else reason end,
+      started_at = case when p_status = 'running' then coalesce(started_at, now()) else started_at end,
+      finished_at = case when p_status in ('completed','blocked','failed') then now() else finished_at end
+  where task_id = p_task_id and user_id = p_user_id;
+end;
+$$;
