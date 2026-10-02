@@ -36,6 +36,9 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
     throw new Error("child_tool_scope_escalation")
   }
 
+  const depth = (params.parentTask?.depth ?? -1) + 1
+  if (depth > issuer.maxTaskDepth) throw new Error("agent_task_depth_exceeded")
+
   const task = AgentTaskSchema.parse({
     id: randomUUID(),
     parentTaskId: params.parentTaskId ?? null,
@@ -48,6 +51,7 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
     risk: params.risk,
     expiresAt: now + MAX_TASK_TTL_MS,
     nonce: randomUUID() + randomUUID(),
+    depth,
   })
 
   const boundary = validateTaskBoundary(task, issuer, now)
