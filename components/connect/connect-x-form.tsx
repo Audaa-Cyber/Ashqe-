@@ -13,13 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "You declined the X authorization.",
 }
 
-export default function ConnectXForm({
-  error,
-  email: _email,
-}: {
-  error: string | null
-  email: string
-}) {
+export default function ConnectXForm({ error, email: _email }: { error: string | null; email: string }) {
   const [isInIframe, setIsInIframe] = useState(false)
 
   useEffect(() => {
@@ -42,20 +36,17 @@ export default function ConnectXForm({
             </svg>
           </div>
         </div>
-
         <div className="text-center space-y-3">
           <h1 className="text-3xl font-bold tracking-tight text-balance">Connect your X account</h1>
           <p className="text-muted-foreground leading-relaxed">
             We&apos;ll read your recent posts to learn your voice. Your style profile is private and yours alone.
           </p>
         </div>
-
         {message && (
           <div className="border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
             {message}
           </div>
         )}
-
         {isInIframe && (
           <div className="border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
             <strong>Preview mode:</strong> X OAuth must be tested on the live site. Open{" "}
@@ -65,20 +56,14 @@ export default function ConnectXForm({
             in a new tab to sign in with X.
           </div>
         )}
-
-        <a
-          href="/api/x/connect"
-          className="inline-flex w-full items-center justify-center bg-foreground text-background hover:bg-foreground/90 h-12 text-base font-semibold transition-colors"
-        >
+        <a href="/api/x/connect" className="inline-flex w-full items-center justify-center bg-foreground text-background hover:bg-foreground/90 h-12 text-base font-semibold transition-colors">
           Continue with X
         </a>
-
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-center gap-2"><Dot /> Secure OAuth 2.0 with PKCE</li>
           <li className="flex items-center gap-2"><Dot /> Reads your recent posts</li>
           <li className="flex items-center gap-2"><Dot /> Starts your Voice DNA build after connection</li>
         </ul>
-
         <div className="pt-2 border-t border-border">
           <p className="text-xs text-muted-foreground text-center leading-relaxed">
             We never see your password. You can disconnect at any time from your dashboard.
