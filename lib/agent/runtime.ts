@@ -147,7 +147,7 @@ export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
     }
 
     const result = await authorizeAutonomousAction(supabase, task.userId, actionType, {
-      targetId: typeof task.input.targetId === "string" ? task.input.targetId : undefined,
+      targetId: task.resource?.targetId,
       recipientOptedIn: task.input.recipientOptedIn === true,
       aiReplyApproved: task.input.aiReplyApproved === true,
       timezone: typeof task.input.timezone === "string" ? task.input.timezone : undefined,
