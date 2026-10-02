@@ -14,6 +14,7 @@ export type TaskFactoryInput = {
   risk: AgentTask["risk"]
   parentTaskId?: string | null
   now?: number
+  parentTask?: AgentTask
 }
 
 export function createAgentTask(params: TaskFactoryInput): AgentTask {
@@ -24,6 +25,17 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
     throw new Error("agent_delegate_not_allowed")
   }
 
+  if (params.parentTask) {
+    if (params.parentTask.userId !== params.userId) throw new Error("cross_user_delegation")
+    if (params.parentTask.target !== params.issuer) throw new Error("parent_issuer_mismatch")
+    if (params.parentTask.expiresAt <= now) throw new Error("parent_task_expired")
+  }
+
+  const requestedTools = params.allowedTools ?? []
+  if (params.parentTask && requestedTools.some((tool) => !params.parentTask!.allowedTools.includes(tool))) {
+    throw new Error("child_tool_scope_escalation")
+  }
+
   const task = AgentTaskSchema.parse({
     id: randomUUID(),
     parentTaskId: params.parentTaskId ?? null,
@@ -32,7 +44,7 @@ export function createAgentTask(params: TaskFactoryInput): AgentTask {
     target: params.target,
     goal: params.goal,
     input: params.input ?? {},
-    allowedTools: params.allowedTools ?? [],
+    allowedTools: requestedTools,
     risk: params.risk,
     expiresAt: now + MAX_TASK_TTL_MS,
     nonce: randomUUID() + randomUUID(),
