@@ -21,7 +21,7 @@ async function verifyEvm(chain:BillingChain,token:BillingToken,recipient:string,
  const start=fromBlock>0n?fromBlock:latest
  const end=latest<start+2500n?latest:start+2500n
  if(end<start)return null
- const logs=await rpc(cfg.rpc,"eth_getLogs",[{address:contract,fromBlock:"0x"+start.toString(16),toBlock:"0x"+end.toString(16),topics:[TRANSFER_TOPIC,null,padAddress(recipient)]}]) as any[]
+ const logs=await rpc(cfg.rpc,"eth_getLogs",[{address:contract,fromBlock:"0x"+start.toString(16),toBlock:"0x"+end.toString(16),topics:[TRANSFER_TOPIC,null,padAddress(recipient)]}]) as RpcRecord[]
  for(const log of logs||[]){
   if(typeof log.transactionHash!=="string"||typeof log.blockNumber!=="string"||!Array.isArray(log.topics)||log.topics.length<3)continue
   const amount=BigInt(typeof log.data==="string"?log.data:"0x0"),sender="0x"+String(log.topics[1]).slice(-40)
@@ -46,8 +46,8 @@ async function verifySolana(token:BillingToken,recipient:string,expected:bigint)
    if(sig.err)continue
    const tx=await rpc(cfg.rpc,"getParsedTransaction",[String(sig.signature),{encoding:"jsonParsed",maxSupportedTransactionVersion:0}]) as RpcRecord | null
    if(!tx?.meta||tx.meta.err)continue
-   const pre=tx.meta.preTokenBalances||[],post=tx.meta.postTokenBalances||[];let received=0n
-   for(const p of post){if(p.owner!==recipient||p.mint!==mint)continue;const before=pre.find((x: {accountIndex?: number; uiTokenAmount?: {amount?: string}})=>x.accountIndex===p.accountIndex)?.uiTokenAmount?.amount||"0";const after=p.uiTokenAmount?.amount||"0";const delta=BigInt(after)-BigInt(before);if(delta>0n)received+=delta}
+   const pre=Array.isArray(tx.meta.preTokenBalances)?tx.meta.preTokenBalances as RpcRecord[]:[],post=Array.isArray(tx.meta.postTokenBalances)?tx.meta.postTokenBalances as RpcRecord[]:[];let received=0n
+   for(const p of post){if(p.owner!==recipient||p.mint!==mint)continue;const beforeRow=pre.find((x)=>x.accountIndex===p.accountIndex);const before=beforeRow?.uiTokenAmount?.amount||"0";const after=p.uiTokenAmount?.amount||"0";const delta=BigInt(after)-BigInt(before);if(delta>0n)received+=delta}
    if(received<expected)continue
    const slot=BigInt(tx.slot||0),eventKey=createHash("sha256").update("solana:"+sig.signature).digest("hex")
    return {txHash:sig.signature,sender:"unknown",amountUnits:received,blockNumber:slot,eventKey,raw:{signature:sig.signature,account:account.pubkey,slot:tx.slot}}
