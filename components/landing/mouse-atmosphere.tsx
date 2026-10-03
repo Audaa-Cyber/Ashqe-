@@ -43,8 +43,8 @@ export default function MouseAtmosphere() {
     const up = () => setPressing(false)
 
     const render = () => {
-      currentX += (targetX - currentX) * 0.18
-      currentY += (targetY - currentY) * 0.18
+      currentX += (targetX - currentX) * 0.085
+      currentY += (targetY - currentY) * 0.085
       ringX += (targetX - ringX) * 0.12
       ringY += (targetY - ringY) * 0.12
 
