@@ -23,7 +23,7 @@ function normalizeTweet(input: unknown): XTweet {
     id: String(item.id ?? item.id_str ?? item.tweet_id ?? ""),
     text: String(item.text ?? item.full_text ?? ""),
     created_at: item.created_at ?? item.tweet_created_at ?? item.created_at_datetime,
-    author_id: typeof (item.author_id ?? author.id ?? user.id_str ?? user.id) === "string" ? (item.author_id ?? author.id ?? user.id_str ?? user.id) as string : undefined,
+    author_id: (() => { const value = item.author_id ?? author.id ?? user.id_str ?? user.id; return typeof value === "string" ? value : undefined })(),
     public_metrics: {
       retweet_count: Number(metrics.retweet_count ?? 0),
       reply_count: Number(metrics.reply_count ?? 0),
@@ -65,7 +65,7 @@ async function fetcherRequest(path: string, params: Record<string, string> = {})
 async function fetcherSearch(query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
   const json = await fetcherRequest("/api/search", { query, sort: "Latest", ...(cursor ? { cursor } : {}) })
   const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
-  return { tweets: raw.slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet) => tweet.id && tweet.text), provider: "fetcher", nextCursor: json?.cursor ?? json?.meta?.next_token }
+  return { tweets: raw.slice(0, max).map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet: XTweet) => tweet.id && tweet.text), provider: "fetcher", nextCursor: json?.cursor ?? json?.meta?.next_token }
 }
 
 async function searchFromProvider(provider: PublicIndexer, query: string, max: number, cursor?: string): Promise<PublicSearchResult> {
@@ -161,7 +161,7 @@ export async function fetchPublicTweetsFromIndexer(userId: string, max = 100): P
     url.searchParams.set("count", String(count))
     const json = await readJson(await request(url, { headers: { Accept: "application/json" } }), "FxTwitter")
     const raw = Array.isArray(json.results) ? json.results : []
-    const tweets = raw.map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet) => tweet.id && tweet.text).slice(0, count)
+    const tweets = raw.map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet: XTweet) => tweet.id && tweet.text).slice(0, count)
     if (tweets.length) return tweets
   } catch (error) {
     lastError = error
@@ -171,7 +171,7 @@ export async function fetchPublicTweetsFromIndexer(userId: string, max = 100): P
   try {
     const json = await fetcherRequest("/api/user/" + encodeURIComponent(userId) + "/tweets")
     const raw = Array.isArray(json?.tweets) ? json.tweets : Array.isArray(json?.posts) ? json.posts : Array.isArray(json?.data) ? json.data : []
-    const tweets = raw.slice(0, count).map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet) => tweet.id && tweet.text)
+    const tweets = raw.slice(0, count).map((tweet: unknown) => normalizeTweet(tweet)).filter((tweet: XTweet) => tweet.id && tweet.text)
     if (tweets.length) return tweets
   } catch (error) {
     lastError = error
