@@ -15,7 +15,7 @@
 .ashqe-cursor-ring{width:34px;height:34px;margin:-17px 0 0 -17px;border:1px solid rgba(255,255,255,.48);background:rgba(255,255,255,.025);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1),margin .28s cubic-bezier(.22,1,.36,1),border-color .28s ease,background-color .28s ease,opacity .28s ease}
 .ashqe-premium-cursor.is-hovering .ashqe-cursor-ring{width:48px;height:48px;margin:-24px 0 0 -24px;border-color:rgba(255,255,255,.72);background:rgba(255,255,255,.06)}
 .ashqe-premium-cursor.is-pressing .ashqe-cursor-ring{width:28px;height:28px;margin:-14px 0 0 -14px;background:rgba(255,255,255,.1)}
-@media (pointer:coarse),(prefers-reduced-motion:reduce){.ashqe-premium-cursor{display:none!important}}
+html.ashqe-cursor-enabled,html.ashqe-cursor-enabled *{cursor:none!important}\n@media (pointer:coarse),(prefers-reduced-motion:reduce){.ashqe-premium-cursor{display:none!important}}
 .ashqe-display{font-family:var(--font-display),sans-serif;letter-spacing:-.045em}
 .ashqe-mono{font-family:var(--font-mono),monospace;letter-spacing:.02em}
 .hairline{border-color:rgba(255,255,255,.09)}
