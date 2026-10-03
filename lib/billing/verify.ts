@@ -53,8 +53,9 @@ async function verifySolana(token:BillingToken,recipient:string,expected:bigint)
  for(const account of accounts.slice(0,8)){
   const signatures=rpcRecordArray(await rpc(cfg.rpc,"getSignaturesForAddress",[String(account.pubkey),{limit:30}]))
   for(const sig of signatures){
-   if(sig.err)continue
-   const tx=rpcRecord(await rpc(cfg.rpc,"getParsedTransaction",[String(sig.signature),{encoding:"jsonParsed",maxSupportedTransactionVersion:0}]))
+   const signature=nestedString(sig,"signature")
+   if(!signature||sig.err)continue
+   const tx=rpcRecord(await rpc(cfg.rpc,"getParsedTransaction",[signature,{encoding:"jsonParsed",maxSupportedTransactionVersion:0}]))
    const meta=tx?rpcRecord(tx.meta):null
    if(!meta||meta.err)continue
    const pre=rpcRecordArray(meta.preTokenBalances),post=rpcRecordArray(meta.postTokenBalances);let received=0n
@@ -69,8 +70,8 @@ async function verifySolana(token:BillingToken,recipient:string,expected:bigint)
     if(delta>0n)received+=delta
    }
    if(received<expected)continue
-   const slotValue=tx?.slot;const slot=BigInt(typeof slotValue==="number"||typeof slotValue==="string"?slotValue:0);const eventKey=createHash("sha256").update("solana:"+String(sig.signature)).digest("hex")
-   return {txHash:sig.signature,sender:"unknown",amountUnits:received,blockNumber:slot,eventKey,raw:{signature:sig.signature,account:account.pubkey,slot:slotValue}}
+   const slotValue=tx?.slot;const slot=BigInt(typeof slotValue==="number"||typeof slotValue==="string"?slotValue:0);const eventKey=createHash("sha256").update("solana:"+signature).digest("hex")
+   return {txHash:signature,sender:"unknown",amountUnits:received,blockNumber:slot,eventKey,raw:{signature,account:account.pubkey,slot:slotValue}}
   }
  }
  return null
