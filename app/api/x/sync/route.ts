@@ -11,10 +11,23 @@ export async function POST(){
   const { data: conn, error: connectionError } = await supabase
     .from("x_connections")
     .select("x_user_id,x_username")
+
     .eq("user_id", user.id)
     .maybeSingle()
   if (connectionError || !conn) return NextResponse.json({ error: "x_not_connected" }, { status: 400 })
-  const [tweets,mentions]=await Promise.all([fetchRecentTweets("",conn.x_user_id,100),fetchRecentMentions("",conn.x_username,100)])
+  const { getValidAccessToken } = await import("@/lib/x/api")
+  const connection = await getValidAccessToken(supabase, user.id)
+  if (!connection) return NextResponse.json({ error: "x_token_unavailable" }, { status: 401 })
+  let tweets, mentions
+  try {
+    ;[tweets, mentions] = await Promise.all([
+      fetchRecentTweets(connection.access_token, conn.x_user_id, 100),
+      fetchRecentMentions(connection.access_token, conn.x_user_id, 100),
+    ])
+  } catch (error) {
+    console.error("[x-sync] official X read failed", error)
+    return NextResponse.json({ error: "x_api_read_failed", detail: error instanceof Error ? error.message : String(error) }, { status: 502 })
+  }
   const style=await supabase.from("style_profiles").select("topics").eq("user_id",user.id).maybeSingle()
   const topics=Array.isArray(style.data?.topics)?style.data.topics.slice(0,3):[]
   let discovered:unknown[]=[]
