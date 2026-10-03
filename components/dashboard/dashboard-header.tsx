@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { RefreshCw } from "lucide-react"
 
 interface Props {
   user: { email: string }
@@ -10,6 +11,8 @@ interface Props {
 
 export default function DashboardHeader({ user, connection }: Props) {
   const [open, setOpen] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const initial = (connection.name?.[0] ?? user.email[0] ?? "A").toUpperCase()
 
   useEffect(() => {
@@ -44,6 +47,33 @@ export default function DashboardHeader({ user, connection }: Props) {
             <span className="w-2 h-2 rounded-full bg-foreground" aria-hidden />
             <span className="text-xs font-medium">@{connection.username}</span>
           </Link>
+          <div className="relative hidden sm:block">
+            <button
+              type="button"
+              disabled={syncing}
+              onClick={async () => {
+                setSyncing(true)
+                setSyncMessage(null)
+                try {
+                  const res = await fetch("/api/x/sync", { method: "POST" })
+                  const data = await res.json().catch(() => ({}))
+                  if (!res.ok) throw new Error(data.detail || data.error || "sync_failed")
+                  setSyncMessage(`Synced ${data.posts ?? 0} posts`)
+                  window.setTimeout(() => setSyncMessage(null), 2500)
+                } catch (error) {
+                  setSyncMessage(error instanceof Error ? error.message : "X sync failed")
+                } finally {
+                  setSyncing(false)
+                }
+              }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 border border-border hover:bg-secondary disabled:opacity-50 transition-colors"
+              aria-label="Sync X data"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+              <span className="text-xs font-medium">{syncing ? "Syncing" : "Sync X"}</span>
+            </button>
+            {syncMessage && <div role="status" className="absolute right-0 top-full mt-2 w-72 border border-border bg-background px-3 py-2 text-xs shadow-lg">{syncMessage}</div>}
+          </div>
 
           <div className="relative">
             <button
