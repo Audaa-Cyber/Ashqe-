@@ -23,7 +23,7 @@ function normalizeTweet(input: unknown): XTweet {
     id: String(item.id ?? item.id_str ?? item.tweet_id ?? ""),
     text: String(item.text ?? item.full_text ?? ""),
     created_at: item.created_at ?? item.tweet_created_at ?? item.created_at_datetime,
-    author_id: item.author_id ?? author.id ?? user.id_str ?? user.id,
+    author_id: typeof (item.author_id ?? author.id ?? user.id_str ?? user.id) === "string" ? (item.author_id ?? author.id ?? user.id_str ?? user.id) as string : undefined,
     public_metrics: {
       retweet_count: Number(metrics.retweet_count ?? 0),
       reply_count: Number(metrics.reply_count ?? 0),
