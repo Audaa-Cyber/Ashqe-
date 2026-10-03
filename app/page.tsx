@@ -1,5 +1,6 @@
 import Header from "@/components/landing/header"
 import HeroSection from "@/components/landing/hero-section"
+import MouseAtmosphere from "@/components/landing/mouse-atmosphere"
 import HowItWorks from "@/components/landing/how-it-works"
 import FeaturesDeepDive from "@/components/landing/features-deep-dive"
 import StyleCardShowcase from "@/components/landing/style-card-showcase"
@@ -14,18 +15,21 @@ export const dynamic = "force-dynamic"
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <Header />
-      <HeroSection />
-      <HowItWorks />
-      <FeaturesDeepDive />
-      <StyleCardShowcase />
-      <ChatExperience />
-      <DashboardPreview />
-      <Testimonials />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
+    <main className="landing-shell min-h-screen text-foreground">
+      <MouseAtmosphere />
+      <div className="relative z-10">
+        <Header />
+        <HeroSection />
+        <HowItWorks />
+        <FeaturesDeepDive />
+        <StyleCardShowcase />
+        <ChatExperience />
+        <DashboardPreview />
+        <Testimonials />
+        <FAQ />
+        <FinalCTA />
+        <Footer />
+      </div>
     </main>
   )
 }
