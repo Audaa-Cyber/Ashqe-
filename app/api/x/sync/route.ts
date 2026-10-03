@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { fetchRecentTweets, fetchRecentMentions, searchRecentTweets } from "@/lib/x/api"
+import { fetchRecentTweets, fetchRecentMentions, searchRecentTweets, getValidAccessToken } from "@/lib/x/api"
+import { fetchPublicTweetsFromIndexer, searchPublicTweets } from "@/lib/x/public-indexers"
 
 export const maxDuration=60
 
@@ -15,17 +16,27 @@ export async function POST(){
     .eq("user_id", user.id)
     .maybeSingle()
   if (connectionError || !conn) return NextResponse.json({ error: "x_not_connected" }, { status: 400 })
-  const { getValidAccessToken } = await import("@/lib/x/api")
-  const connection = await getValidAccessToken(supabase, user.id)
-  if (!connection) return NextResponse.json({ error: "x_token_unavailable" }, { status: 401 })
   let tweets, mentions
+  let oauthConnection: Awaited<ReturnType<typeof getValidAccessToken>> = null
   try {
-    ;[tweets, mentions] = await Promise.all([
-      fetchRecentTweets(connection.access_token, conn.x_user_id, 100),
-      fetchRecentMentions(connection.access_token, conn.x_user_id, 100),
-    ])
+    // Public reads should work without an X OAuth token. Use the public indexers
+    // first, then fall back to the connected account for private/uncached data.
+    try {
+      [tweets, mentions] = await Promise.all([
+        fetchPublicTweetsFromIndexer(conn.x_user_id, 100),
+        searchPublicTweets(`to:${conn.x_username} -is:retweet`, 100).then((result) => result.tweets),
+      ])
+    } catch (publicError) {
+      console.warn("[x-sync] public X fetch failed, falling back to OAuth", publicError)
+      oauthConnection = await getValidAccessToken(supabase, user.id)
+      if (!oauthConnection) throw publicError
+      ;[tweets, mentions] = await Promise.all([
+        fetchRecentTweets(oauthConnection.access_token, conn.x_user_id, 100),
+        fetchRecentMentions(oauthConnection.access_token, conn.x_user_id, 100),
+      ])
+    }
   } catch (error) {
-    console.error("[x-sync] official X read failed", error)
+    console.error("[x-sync] X read failed", error)
     return NextResponse.json({ error: "x_api_read_failed", detail: error instanceof Error ? error.message : String(error) }, { status: 502 })
   }
   const style=await supabase.from("style_profiles").select("topics").eq("user_id",user.id).maybeSingle()
@@ -33,7 +44,7 @@ export async function POST(){
   let discovered:unknown[]=[]
   for(const topic of topics){
     try{
-      const hits=await searchRecentTweets("",String(topic)+" -is:retweet",30)
+      const hits=await searchPublicTweets(String(topic)+" -is:retweet",30).then((result) => result.tweets)
       const top=hits.filter(t=>(t.public_metrics?.like_count??0)+(t.public_metrics?.reply_count??0)>=5).slice(0,5)
       for(const hit of top) discovered.push({topic, tweet:hit})
     }catch{}
