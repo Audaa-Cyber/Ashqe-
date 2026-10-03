@@ -2,7 +2,8 @@ import {createHash} from "node:crypto"
 import type {BillingChain,BillingToken} from "./config"
 import {chainConfig,tokenAddress} from "./config"
 const TRANSFER_TOPIC="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-async function rpc(url:string,method:string,params:unknown[]){
+type RpcRecord=Record<string, unknown>
+async function rpc(url:string,method:string,params:unknown[]):Promise<unknown>{
  const res=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method,params}),cache:"no-store"})
  if(!res.ok)throw new Error("rpc_http_"+res.status)
  const json=await res.json() as {result?:unknown;error?:{message?:string}}
@@ -25,7 +26,7 @@ async function verifyEvm(chain:BillingChain,token:BillingToken,recipient:string,
   if(typeof log.transactionHash!=="string"||typeof log.blockNumber!=="string"||!Array.isArray(log.topics)||log.topics.length<3)continue
   const amount=BigInt(typeof log.data==="string"?log.data:"0x0"),sender="0x"+String(log.topics[1]).slice(-40)
   if(amount<expected)continue
-  const receipt=await rpc(cfg.rpc,"eth_getTransactionReceipt",[log.transactionHash])
+  const receipt=await rpc(cfg.rpc,"eth_getTransactionReceipt",[log.transactionHash]) as RpcRecord | null
   if(!receipt||receipt.status!=="0x1")continue
   const block=BigInt(log.blockNumber),confirmations=latest>=block?latest-block+1n:0n
   if(confirmations<BigInt(Math.max(1,cfg.confirmations)))continue
@@ -37,12 +38,13 @@ async function verifyEvm(chain:BillingChain,token:BillingToken,recipient:string,
 async function verifySolana(token:BillingToken,recipient:string,expected:bigint):Promise<VerifiedPayment|null>{
  const cfg=chainConfig("solana"),mint=tokenAddress("solana",token)
  if(!cfg.wallet||!mint)throw new Error("billing_solana_rail_not_configured")
- const owner=await rpc(cfg.rpc,"getTokenAccountsByOwner",[recipient,{mint},{encoding:"jsonParsed"}])
- for(const account of (owner?.value||[]).slice(0,8)){
-  const signatures=await rpc(cfg.rpc,"getSignaturesForAddress",[account.pubkey,{limit:30}])
-  for(const sig of signatures||[]){
+ const owner=await rpc(cfg.rpc,"getTokenAccountsByOwner",[recipient,{mint},{encoding:"jsonParsed"}]) as RpcRecord | null
+ const accounts=Array.isArray(owner?.value)?owner.value as RpcRecord[]:[]
+ for(const account of accounts.slice(0,8)){
+  const signatures=await rpc(cfg.rpc,"getSignaturesForAddress",[String(account.pubkey),{limit:30}]) as RpcRecord[]
+  for(const sig of signatures){
    if(sig.err)continue
-   const tx=await rpc(cfg.rpc,"getParsedTransaction",[sig.signature,{encoding:"jsonParsed",maxSupportedTransactionVersion:0}])
+   const tx=await rpc(cfg.rpc,"getParsedTransaction",[String(sig.signature),{encoding:"jsonParsed",maxSupportedTransactionVersion:0}]) as RpcRecord | null
    if(!tx?.meta||tx.meta.err)continue
    const pre=tx.meta.preTokenBalances||[],post=tx.meta.postTokenBalances||[];let received=0n
    for(const p of post){if(p.owner!==recipient||p.mint!==mint)continue;const before=pre.find((x: {accountIndex?: number; uiTokenAmount?: {amount?: string}})=>x.accountIndex===p.accountIndex)?.uiTokenAmount?.amount||"0";const after=p.uiTokenAmount?.amount||"0";const delta=BigInt(after)-BigInt(before);if(delta>0n)received+=delta}
