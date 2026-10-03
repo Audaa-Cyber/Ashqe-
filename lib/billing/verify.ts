@@ -5,7 +5,7 @@ const TRANSFER_TOPIC="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4d
 async function rpc(url:string,method:string,params:unknown[]){
  const res=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method,params}),cache:"no-store"})
  if(!res.ok)throw new Error("rpc_http_"+res.status)
- const json=await res.json() as {result?:any;error?:{message?:string}}
+ const json=await res.json() as {result?:unknown;error?:{message?:string}}
  if(json.error)throw new Error(json.error.message||"rpc_error")
  return json.result
 }
@@ -22,8 +22,8 @@ async function verifyEvm(chain:BillingChain,token:BillingToken,recipient:string,
  if(end<start)return null
  const logs=await rpc(cfg.rpc,"eth_getLogs",[{address:contract,fromBlock:"0x"+start.toString(16),toBlock:"0x"+end.toString(16),topics:[TRANSFER_TOPIC,null,padAddress(recipient)]}]) as any[]
  for(const log of logs||[]){
-  if(!log?.transactionHash||!log?.blockNumber||!Array.isArray(log.topics)||log.topics.length<3)continue
-  const amount=BigInt(log.data||"0x0"),sender="0x"+String(log.topics[1]).slice(-40)
+  if(typeof log.transactionHash!=="string"||typeof log.blockNumber!=="string"||!Array.isArray(log.topics)||log.topics.length<3)continue
+  const amount=BigInt(typeof log.data==="string"?log.data:"0x0"),sender="0x"+String(log.topics[1]).slice(-40)
   if(amount<expected)continue
   const receipt=await rpc(cfg.rpc,"eth_getTransactionReceipt",[log.transactionHash])
   if(!receipt||receipt.status!=="0x1")continue
@@ -45,7 +45,7 @@ async function verifySolana(token:BillingToken,recipient:string,expected:bigint)
    const tx=await rpc(cfg.rpc,"getParsedTransaction",[sig.signature,{encoding:"jsonParsed",maxSupportedTransactionVersion:0}])
    if(!tx?.meta||tx.meta.err)continue
    const pre=tx.meta.preTokenBalances||[],post=tx.meta.postTokenBalances||[];let received=0n
-   for(const p of post){if(p.owner!==recipient||p.mint!==mint)continue;const before=pre.find((x:any)=>x.accountIndex===p.accountIndex)?.uiTokenAmount?.amount||"0";const after=p.uiTokenAmount?.amount||"0";const delta=BigInt(after)-BigInt(before);if(delta>0n)received+=delta}
+   for(const p of post){if(p.owner!==recipient||p.mint!==mint)continue;const before=pre.find((x: {accountIndex?: number; uiTokenAmount?: {amount?: string}})=>x.accountIndex===p.accountIndex)?.uiTokenAmount?.amount||"0";const after=p.uiTokenAmount?.amount||"0";const delta=BigInt(after)-BigInt(before);if(delta>0n)received+=delta}
    if(received<expected)continue
    const slot=BigInt(tx.slot||0),eventKey=createHash("sha256").update("solana:"+sig.signature).digest("hex")
    return {txHash:sig.signature,sender:"unknown",amountUnits:received,blockNumber:slot,eventKey,raw:{signature:sig.signature,account:account.pubkey,slot:tx.slot}}
