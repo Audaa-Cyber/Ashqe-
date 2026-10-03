@@ -22,7 +22,7 @@ function normalizeTweet(input: unknown): XTweet {
   return {
     id: String(item.id ?? item.id_str ?? item.tweet_id ?? ""),
     text: String(item.text ?? item.full_text ?? ""),
-    created_at: item.created_at ?? item.tweet_created_at ?? item.created_at_datetime,
+    created_at: (() => { const value = item.created_at ?? item.tweet_created_at ?? item.created_at_datetime; return typeof value === "string" ? value : undefined })(),
     author_id: (() => { const value = item.author_id ?? author.id ?? user.id_str ?? user.id; return typeof value === "string" ? value : undefined })(),
     public_metrics: {
       retweet_count: Number(metrics.retweet_count ?? 0),
