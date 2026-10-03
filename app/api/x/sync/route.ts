@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { fetchRecentTweets, fetchRecentMentions, searchRecentTweets, getValidAccessToken } from "@/lib/x/api"
+import { fetchRecentTweets, fetchRecentMentions, getValidAccessToken } from "@/lib/x/api"
 import { fetchPublicTweetsFromIndexer, searchPublicTweets } from "@/lib/x/public-indexers"
 
 export const maxDuration=60
