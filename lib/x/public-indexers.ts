@@ -7,18 +7,23 @@ export interface PublicSearchResult { tweets: XTweet[]; provider: PublicIndexer;
 const FETCH_TIMEOUT_MS = 12_000
 
 function normalizeTweet(input: unknown): XTweet {
-  const metrics = input.public_metrics ?? {
-    retweet_count: Number(input.retweet_count ?? input.reposts ?? 0),
-    reply_count: Number(input.reply_count ?? input.replies ?? 0),
-    like_count: Number(input.like_count ?? input.likes ?? input.favorite_count ?? 0),
-    quote_count: Number(input.quote_count ?? input.quotes ?? 0),
-    impression_count: Number(input.impression_count ?? input.views ?? input.views_count ?? 0),
-  }
+  const item = input && typeof input === "object" ? input as Record<string, unknown> : {}
+  const author = item.author && typeof item.author === "object" ? item.author as Record<string, unknown> : {}
+  const user = item.user && typeof item.user === "object" ? item.user as Record<string, unknown> : {}
+  const metrics = item.public_metrics && typeof item.public_metrics === "object"
+    ? item.public_metrics as Record<string, unknown>
+    : {
+        retweet_count: Number(item.retweet_count ?? item.reposts ?? 0),
+        reply_count: Number(item.reply_count ?? item.replies ?? 0),
+        like_count: Number(item.like_count ?? item.likes ?? item.favorite_count ?? 0),
+        quote_count: Number(item.quote_count ?? item.quotes ?? 0),
+        impression_count: Number(item.impression_count ?? item.views ?? item.views_count ?? 0),
+      }
   return {
-    id: String(input.id ?? input.id_str ?? input.tweet_id ?? ""),
-    text: String(input.text ?? input.full_text ?? ""),
-    created_at: input.created_at ?? input.tweet_created_at ?? input.created_at_datetime,
-    author_id: input.author_id ?? input.author?.id ?? input.user?.id_str ?? input.user?.id,
+    id: String(item.id ?? item.id_str ?? item.tweet_id ?? ""),
+    text: String(item.text ?? item.full_text ?? ""),
+    created_at: item.created_at ?? item.tweet_created_at ?? item.created_at_datetime,
+    author_id: item.author_id ?? author.id ?? user.id_str ?? user.id,
     public_metrics: {
       retweet_count: Number(metrics.retweet_count ?? 0),
       reply_count: Number(metrics.reply_count ?? 0),
