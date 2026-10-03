@@ -93,7 +93,7 @@ export async function getValidAccessToken(supabase: SupabaseClient, userId: stri
 }
 
 export async function fetchXMe(accessToken: string): Promise<XUser> {
-  const url = new URL("https://api.twitter.com/2/users/me")
+  const url = new URL("https://api.x.com/2/users/me")
   url.searchParams.set("user.fields", "profile_image_url,username,name")
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -107,12 +107,32 @@ export async function fetchXMe(accessToken: string): Promise<XUser> {
   return json.data
 }
 
-export async function fetchRecentTweets(_accessToken: string, xUserId: string, max = 50): Promise<XTweet[]> {
+async function fetchXTimeline(accessToken: string, xUserId: string, max: number): Promise<XTweet[]> {
+  const url = new URL(`https://api.x.com/2/users/${encodeURIComponent(xUserId)}/tweets`)
+  url.searchParams.set("max_results", String(Math.min(Math.max(max, 5), 100)))
+  url.searchParams.set("tweet.fields", "created_at,author_id,public_metrics")
+  url.searchParams.set("exclude", "retweets,replies")
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`X timeline failed (${res.status}): ${text}`)
+  }
+  const json = await res.json() as { data?: XTweet[] }
+  return Array.isArray(json.data) ? json.data.filter((tweet) => tweet?.id && tweet?.text) : []
+}
+
+export async function fetchRecentTweets(accessToken: string, xUserId: string, max = 50): Promise<XTweet[]> {
+  if (accessToken) {
+    return await fetchXTimeline(accessToken, xUserId, max)
+  }
   return await fetchPublicTweetsFromIndexer(xUserId, max)
 }
 
 export async function postTweet(accessToken: string, text: string): Promise<{ id: string; text: string }> {
-  const res = await fetch("https://api.twitter.com/2/tweets", {
+  const res = await fetch("https://api.x.com/2/tweets", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -141,11 +161,40 @@ export async function postReply(accessToken: string, text: string, inReplyToId: 
 }
 
 
-export async function searchRecentTweets(_accessToken: string, query: string, max = 20): Promise<XTweet[]> {
-  return (await searchPublicTweets(query, max)).tweets
+export async function searchRecentTweets(accessToken: string, query: string, max = 20): Promise<XTweet[]> {
+  if (!accessToken) return (await searchPublicTweets(query, max)).tweets
+  const url = new URL("https://api.x.com/2/tweets/search/recent")
+  url.searchParams.set("query", query.trim().slice(0, 512) || "-is:retweet")
+  url.searchParams.set("max_results", String(Math.min(Math.max(max, 10), 100)))
+  url.searchParams.set("tweet.fields", "created_at,author_id,public_metrics")
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`X search failed (${res.status}): ${text}`)
+  }
+  const json = await res.json() as { data?: XTweet[] }
+  return Array.isArray(json.data) ? json.data.filter((tweet) => tweet?.id && tweet?.text) : []
 }
 
-export async function fetchRecentMentions(_accessToken: string, xUsername: string, max = 50): Promise<XTweet[]> {
-  return searchRecentTweets("", `to:${xUsername.replace(/^@/, "")} -is:retweet`, max)
+export async function fetchRecentMentions(accessToken: string, xUserIdOrUsername: string, max = 50): Promise<XTweet[]> {
+  if (!accessToken) {
+    return searchRecentTweets("", `to:${xUserIdOrUsername.replace(/^@/, "")} -is:retweet`, max)
+  }
+  const url = new URL(`https://api.x.com/2/users/${encodeURIComponent(xUserIdOrUsername)}/mentions`)
+  url.searchParams.set("max_results", String(Math.min(Math.max(max, 5), 100)))
+  url.searchParams.set("tweet.fields", "created_at,author_id,public_metrics")
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`X mentions failed (${res.status}): ${text}`)
+  }
+  const json = await res.json() as { data?: XTweet[] }
+  return Array.isArray(json.data) ? json.data.filter((tweet) => tweet?.id && tweet?.text) : []
 }
 
