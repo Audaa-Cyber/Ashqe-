@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { analyzeStyle } from "@/lib/style-analyzer"
 import { fetchRecentTweets, getValidAccessToken } from "@/lib/x/api"
+import { fetchPublicTweetsFromIndexer } from "@/lib/x/public-indexers"
 import { NextResponse } from "next/server"
 
 export const maxDuration = 60
@@ -21,12 +22,19 @@ export async function POST() {
     return NextResponse.json({ error: "x_not_connected" }, { status: 400 })
   }
 
-  const tokenConnection = await getValidAccessToken(supabase, user.id)
-  if (!tokenConnection) return NextResponse.json({ error: "x_token_unavailable" }, { status: 401 })
-
   let tweets
   try {
-    tweets = await fetchRecentTweets(tokenConnection.access_token, connection.x_user_id, 100)
+    // Clone is a public-read operation. Try the public indexers first so it does not
+    // depend on an X OAuth token just to read public posts. If the account is private
+    // or an indexer is unavailable, fall back to the connected X account when possible.
+    try {
+      tweets = await fetchPublicTweetsFromIndexer(connection.x_user_id, 100)
+    } catch (publicError) {
+      console.warn("[onboarding/clone] public X fetch failed, falling back to OAuth", publicError)
+      const tokenConnection = await getValidAccessToken(supabase, user.id)
+      if (!tokenConnection) throw publicError
+      tweets = await fetchRecentTweets(tokenConnection.access_token, connection.x_user_id, 100)
+    }
   } catch (error) {
     console.error("[onboarding/clone] X history fetch failed", error)
     return NextResponse.json({ error: "x_history_failed" }, { status: 502 })
