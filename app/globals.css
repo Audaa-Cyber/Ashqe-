@@ -8,7 +8,7 @@
 @layer components{
 .landing-shell{position:relative;isolation:isolate;background-color:var(--background);background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);background-size:32px 32px}
 .ashqe-surface{background:#101216}
-.ashqe-mouse-glow{position:absolute;top:0;left:0;width:30rem;height:30rem;border-radius:9999px;opacity:.13;filter:blur(72px);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 28%,rgba(255,255,255,.08) 46%,transparent 70%);mix-blend-mode:screen;will-change:transform}
+.ashqe-mouse-glow{position:absolute;top:0;left:0;width:30rem;height:30rem;border-radius:9999px;opacity:.26;filter:blur(58px);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 28%,rgba(255,255,255,.08) 46%,transparent 70%);mix-blend-mode:plus-lighter;will-change:transform}
 .ashqe-display{font-family:var(--font-display),sans-serif;letter-spacing:-.045em}
 .ashqe-mono{font-family:var(--font-mono),monospace;letter-spacing:.02em}
 .hairline{border-color:rgba(255,255,255,.09)}
