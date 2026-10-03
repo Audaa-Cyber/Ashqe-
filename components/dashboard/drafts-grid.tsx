@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
 
 export interface Draft {
@@ -18,54 +16,47 @@ export interface Draft {
 interface Props {
   drafts: Draft[]
   username: string
-  onDraftUpdated: (d: Draft) => void
+  onDraftUpdated: (draft: Draft) => void
   onDraftDeleted: (id: string) => void
 }
 
 export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDeleted }: Props) {
   const [busy, setBusy] = useState<string | null>(null)
 
-  const handlePost = async (d: Draft) => {
-    if (d.content.length > 280) {
+  const handlePost = async (draft: Draft) => {
+    if (draft.content.length > 280) {
       toast.error("Too long for X (max 280 characters)")
       return
     }
-    setBusy(d.id)
+    setBusy(draft.id)
     try {
       const res = await fetch("/api/x/post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draftId: d.id }),
+        body: JSON.stringify({ draftId: draft.id }),
       })
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error ?? "Failed to post")
-      onDraftUpdated({
-        ...d,
-        status: "published",
-        x_post_id: json.id,
-        published_at: new Date().toISOString(),
-      })
+      onDraftUpdated({ ...draft, status: "published", x_post_id: json.id, published_at: new Date().toISOString() })
       toast.success("Posted to X", {
-        action: json.url ? { label: "View", onClick: () => window.open(json.url, "_blank") } : undefined,
+        action: json.url ? { label: "View", onClick: () => window.open(json.url, "_blank", "noopener,noreferrer") } : undefined,
       })
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to post")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to post")
     } finally {
       setBusy(null)
     }
   }
 
-  const handleDelete = async (d: Draft) => {
-    setBusy(d.id)
+  const handleDelete = async (draft: Draft) => {
+    setBusy(draft.id)
     try {
-      const res = await fetch(`/api/drafts/${d.id}`, { method: "DELETE" })
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        throw new Error(json.error ?? "Failed to delete")
-      }
-      onDraftDeleted(d.id)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete")
+      const res = await fetch(`/api/drafts/${draft.id}`, { method: "DELETE" })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error ?? "Failed to delete")
+      onDraftDeleted(draft.id)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete")
     } finally {
       setBusy(null)
     }
@@ -81,70 +72,41 @@ export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDe
           </p>
         </div>
       </div>
-
       {drafts.length === 0 ? (
-        <Card className="p-10 border-border bg-secondary/30 text-center">
-          <p className="text-sm text-muted-foreground">
-            No drafts yet. Ask the agent for a post, then save or publish it.
-          </p>
-        </Card>
+        <div className="border border-border bg-secondary/30 p-10 text-center">
+          <p className="text-sm text-muted-foreground">No drafts yet. Ask the agent for a post, then save or publish it.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {drafts.map((d) => (
-            <Card key={d.id} className="p-5 border-border bg-background">
+          {drafts.map((draft) => (
+            <article key={draft.id} className="p-5 border border-border bg-background">
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span
-                    className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${
-                      d.status === "published"
-                        ? "bg-foreground text-background"
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {d.status === "published" ? "Published" : "Draft"}
+                  <span className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 ${draft.status === "published" ? "bg-foreground text-background" : "bg-secondary text-muted-foreground"}`}>
+                    {draft.status === "published" ? "Published" : "Draft"}
                   </span>
-                  <p className="text-xs text-muted-foreground">{relative(d.created_at)}</p>
+                  <p className="text-xs text-muted-foreground">{relative(draft.created_at)}</p>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{d.content}</p>
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{draft.content}</p>
                 <div className="flex items-center gap-2 pt-2">
-                  {d.status === "published" && d.x_post_id ? (
-                    <a
-                      href={`https://x.com/${username}/status/${d.x_post_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm font-medium underline-offset-4 hover:underline"
-                    >
+                  {draft.status === "published" && draft.x_post_id ? (
+                    <a href={`https://x.com/${username}/status/${draft.x_post_id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-medium underline-offset-4 hover:underline">
                       View on X
                     </a>
                   ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => handlePost(d)}
-                      disabled={busy === d.id || d.content.length > 280}
-                      className="bg-foreground text-background hover:bg-foreground/90 h-8"
-                    >
-                      {busy === d.id ? "Posting..." : "Post to X"}
-                    </Button>
+                    <button onClick={() => handlePost(draft)} disabled={busy === draft.id || draft.content.length > 280} className="bg-foreground text-background hover:bg-foreground/90 h-8 px-3 text-sm font-medium disabled:opacity-40">
+                      {busy === draft.id ? "Posting..." : "Post to X"}
+                    </button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDelete(d)}
-                    disabled={busy === d.id}
-                    className="h-8 text-muted-foreground hover:text-foreground"
-                  >
-                    Delete
-                  </Button>
-                  <span
-                    className={`ml-auto text-xs ${
-                      d.content.length > 280 ? "text-destructive" : "text-muted-foreground"
-                    }`}
-                  >
-                    {d.content.length}/280
+                  <button onClick={() => handleDelete(draft)} disabled={busy === draft.id} className="h-8 px-3 text-sm text-muted-foreground hover:text-foreground disabled:opacity-40">
+                    {busy === draft.id ? "Working..." : "Delete"}
+                  </button>
+                  <span className={`ml-auto text-xs ${draft.content.length > 280 ? "text-destructive" : "text-muted-foreground"}`}>
+                    {draft.content.length}/280
                   </span>
                 </div>
               </div>
-            </Card>
+            </article>
           ))}
         </div>
       )}
@@ -154,13 +116,14 @@ export default function DraftsGrid({ drafts, username, onDraftUpdated, onDraftDe
 
 function relative(iso: string): string {
   const ts = new Date(iso).getTime()
-  const diff = Date.now() - ts
-  const m = Math.floor(diff / 60000)
-  if (m < 1) return "just now"
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d ago`
+  if (!Number.isFinite(ts)) return "unknown"
+  const diff = Math.max(0, Date.now() - ts)
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
   return new Date(iso).toLocaleDateString()
 }

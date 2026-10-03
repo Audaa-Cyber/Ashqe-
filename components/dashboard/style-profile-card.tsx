@@ -1,7 +1,5 @@
 "use client"
 
-import { Card } from "@/components/ui/card"
-
 interface StyleProfile {
   tone: string | null
   length_pref: string | null
@@ -23,7 +21,7 @@ export default function StyleProfileCard({
   username: string
 }) {
   return (
-    <Card className="p-6 md:p-8 border-border bg-foreground text-background space-y-5 h-full">
+    <section className="p-6 md:p-8 border border-border bg-foreground text-background space-y-5 h-full">
       <div>
         <p className="text-xs font-semibold text-background/70 uppercase tracking-widest mb-2">Style profile</p>
         <h2 className="text-xl font-bold leading-tight">How @{username} writes</h2>
@@ -32,9 +30,7 @@ export default function StyleProfileCard({
       {style?.summary && <p className="text-sm leading-relaxed text-background/90">{style.summary}</p>}
 
       <div className="space-y-3 text-sm">
-        {style?.tone && (
-          <Row label="Tone" value={style.tone} />
-        )}
+        {style?.tone && <Row label="Tone" value={style.tone} />}
         {style?.length_pref && <Row label="Length" value={style.length_pref} />}
         {style?.rhythm && <Row label="Rhythm" value={style.rhythm} />}
         {style?.topics?.length ? <Row label="Topics" value={style.topics.join(", ")} /> : null}
@@ -44,9 +40,9 @@ export default function StyleProfileCard({
         <div>
           <p className="text-xs text-background/60 mb-1.5">Signature phrasings</p>
           <div className="flex flex-wrap gap-1.5">
-            {style.signature_phrases.slice(0, 6).map((p, i) => (
-              <span key={i} className="text-xs px-2 py-1 rounded-full bg-background/10 border border-background/20">
-                {p}
+            {style.signature_phrases.slice(0, 6).map((phrase, index) => (
+              <span key={index} className="text-xs px-2 py-1 bg-background/10 border border-background/20">
+                {phrase}
               </span>
             ))}
           </div>
@@ -60,7 +56,7 @@ export default function StyleProfileCard({
             : "Style profile pending. Connect more posts to improve accuracy."}
         </p>
       </div>
-    </Card>
+    </section>
   )
 }
 

@@ -14,17 +14,17 @@ export default function HeroSection() {
             Research your world. Detect movement before it is obvious. Find conversations and BD opportunities. Create without sounding generated. Then let Ashqe execute the work you approve.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link href="/connect" className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#ffffff] px-6 text-sm font-bold text-black transition hover:translate-y-[-1px]">
-              Enter Ashqe <ArrowRight className="h-4 w-4"/>
+            <Link href="/connect" className="inline-flex h-12 items-center justify-center gap-2 bg-[#ffffff] px-6 text-sm font-bold text-black transition hover:translate-y-[-1px]">
+              Connect X <ArrowRight className="h-4 w-4"/>
             </Link>
-            <a href="#how-it-works" className="inline-flex h-12 items-center justify-center rounded-lg border border-white/15 px-6 text-sm font-semibold text-white/80 hover:bg-white/5">Explore the system</a>
+            <a href="#how-it-works" className="inline-flex h-12 items-center justify-center border border-white/15 px-6 text-sm font-semibold text-white/80 hover:bg-white/5">Explore the system</a>
           </div>
           <div className="mt-10 ashqe-mono text-[10px] uppercase tracking-[.16em] text-white/35">Research · Radar · Growth · BD · Studio · Automations · Memory</div>
         </div>
 
         <div className="border border-white/10 bg-[#0d0f13]/90">
           <div className="flex items-center justify-between border-b border-white/10 p-4">
-            <span className="ashqe-mono text-[10px] uppercase tracking-[.18em] text-white/40">ASHQE / LIVE BRIEF</span>
+            <span className="ashqe-mono text-[10px] uppercase tracking-[.18em] text-white/40">ASHQE / EXAMPLE BRIEF</span>
             <span className="flex items-center gap-2 text-[10px] text-[#ffffff]"><span className="h-1.5 w-1.5 rounded-full bg-[#ffffff]"/>WATCHING</span>
           </div>
           <div className="p-5">

@@ -1,9 +1,8 @@
 import { randomBytes } from "node:crypto"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import { fetchRecentTweets, fetchXMe } from "@/lib/x/api"
+import { fetchXMe } from "@/lib/x/api"
 import { exchangeCodeForToken } from "@/lib/x/oauth"
-import { analyzeStyle } from "@/lib/style-analyzer"
 import { type NextRequest, NextResponse } from "next/server"
 import { encryptToken } from "@/lib/security/tokens"
 
@@ -52,15 +51,7 @@ export async function GET(request: NextRequest) {
     return errRedirect(request, "users_me_failed")
   }
 
-  let tweets: Awaited<ReturnType<typeof fetchRecentTweets>> = []
-  try {
-    tweets = await fetchRecentTweets(tokens.access_token, me.id, 50)
-  } catch (error) {
-    console.error("[x-oauth] recent posts fetch failed", error)
-  }
-
   const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 7200) * 1000).toISOString()
-  const cleanTweets = tweets.map((tweet) => ({ id: tweet.id, text: tweet.text, created_at: tweet.created_at ?? null, public_metrics: tweet.public_metrics ?? null }))
 
   const { data: authData } = await supabase.auth.getUser()
   let userId = authData.user?.id
@@ -109,7 +100,6 @@ export async function GET(request: NextRequest) {
     refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
     expires_at: expiresAt,
     scope: tokens.scope ?? null,
-    recent_posts: cleanTweets,
     updated_at: new Date().toISOString(),
   }
 
@@ -143,24 +133,16 @@ export async function GET(request: NextRequest) {
     return errRedirect(request, "db_upsert_failed")
   }
 
-  if (tweets.length > 0) {
-    try {
-      const profile = await analyzeStyle(tweets)
-      if (profile) {
-        const { error } = await admin.from("style_profiles").upsert({
-          user_id: resolvedUserId, tone: profile.tone, length_pref: profile.length_pref, rhythm: profile.rhythm,
-          topics: profile.topics, signature_phrases: profile.signature_phrases, do_list: profile.do_list,
-          dont_list: profile.dont_list, summary: profile.summary, sample_posts: cleanTweets.slice(0, 12),
-          posts_analyzed: cleanTweets.length, updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" })
-        if (error) console.error("[x-oauth] style profile save failed", error)
-      }
-    } catch (error) {
-      console.error("[x-oauth] style analysis failed", error)
-    }
-  }
+  const { data: onboardingDone } = await admin
+    .from("ashqe_memories")
+    .select("id")
+    .eq("user_id", resolvedUserId)
+    .eq("title", "Onboarding completed")
+    .limit(1)
+    .maybeSingle()
 
-  const res = NextResponse.redirect(new URL("/dashboard", request.url))
+  const destination = onboardingDone ? "/dashboard" : "/onboarding"
+  const res = NextResponse.redirect(new URL(destination, request.url))
   for (const name of ["x_oauth_state", "x_oauth_verifier", "x_oauth_redirect_uri"]) res.cookies.set(name, "", { path: "/", maxAge: 0 })
   return res
 }

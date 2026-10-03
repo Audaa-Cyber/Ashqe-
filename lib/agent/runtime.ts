@@ -1,0 +1,344 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { authorizeAutonomousAction } from "../execution-policy"
+import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint"
+import { isOperatorAction, validateOperatorAction, type AgentResult, type AgentTask } from "./contracts"
+import { authorizeAgentTask, blockedResult, createAgentTask } from "./orchestrator"
+import { buildAgentWorkflow, type AgentHandlerMap } from "./graph/workflow"
+import { claimAgentTask } from "./idempotency"
+import { assertAgentActionReservation } from "./persistence"
+import { createOperatorHandler } from "./operator"
+
+export type AgentRuntimeEvent = {
+  type: "task.authorized" | "task.blocked" | "task.started" | "task.completed" | "task.failed"
+  taskId: string
+  userId: string
+  agent: AgentTask["target"]
+  at: number
+  reason?: string
+}
+
+export type AgentRuntimeOptions = {
+  handlers: AgentHandlerMap
+  emit?: (event: AgentRuntimeEvent) => void | Promise<void>
+  maxSteps?: number
+  timeoutMs?: number
+  supabase?: SupabaseClient
+  checkpointer?: BaseCheckpointSaver
+  approve?: (task: AgentTask) => Promise<{ approved: boolean; reason?: string }> | { approved: boolean; reason?: string }
+}
+
+export class AgentRuntime {
+  private readonly graph
+  private readonly emit
+  private readonly maxSteps
+  private readonly timeoutMs
+  private readonly supabase
+  private readonly checkpointer
+  private readonly approve
+  private readonly policyApprove
+
+  constructor(options: AgentRuntimeOptions) {
+    this.emit = options.emit ?? (() => undefined)
+    this.maxSteps = Math.max(1, Math.min(options.maxSteps ?? 12, 50))
+    this.timeoutMs = Math.max(1000, Math.min(options.timeoutMs ?? 60_000, 300_000))
+    this.supabase = options.supabase
+    this.checkpointer = options.checkpointer
+    this.approve = options.approve
+    this.policyApprove = this.supabase ? createExecutionPolicyApprovalGate(this.supabase) : undefined
+    const handlers = this.supabase
+      ? { ...options.handlers, operator: createOperatorHandler(this.supabase) }
+      : options.handlers
+    this.graph = buildAgentWorkflow(handlers, this.checkpointer)
+  }
+
+  private async persist(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
+    if (!this.supabase) return
+    const { recordAgentEvent, startAgentRun, updateAgentRun } = await import("./persistence")
+    await recordAgentEvent(this.supabase, task, event)
+    if (event.type === "task.started") await startAgentRun(this.supabase, task)
+    if (result) await updateAgentRun(this.supabase, task, result)
+  }
+  private async publish(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
+    await this.emit(event)
+    await this.persist(event, task, result)
+  }
+
+  private async blockBeforeExecution(task: AgentTask, reason: string): Promise<AgentResult> {
+    const blocked: AgentResult = blockedResult(task.id, task.target, task.risk, reason)
+    try {
+      await this.publish(
+        { type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason },
+        task,
+        blocked,
+      )
+      return blocked
+    } catch {
+      // A claimed queued run must not be left terminally ambiguous when blocked
+      // lifecycle persistence fails. Try to persist a terminal failure instead.
+      return this.failBeforeExecution(task, "agent_blocked_persistence_failed")
+    }
+  }
+
+  private async failBeforeExecution(task: AgentTask, reason: string): Promise<AgentResult> {
+    const result: AgentResult = {
+      taskId: task.id,
+      agent: task.target,
+      status: "failed",
+      reason,
+      risk: task.risk,
+      createdAt: Date.now(),
+    }
+    try {
+      await this.publish(
+        { type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason },
+        task,
+        result,
+      )
+    } catch {
+      // The claimed run remains durable; never replace the primary pre-execution failure.
+    }
+    return result
+  }
+
+  async dispatch(task: AgentTask): Promise<AgentResult> {
+    const authorization = authorizeAgentTask(task)
+    if (!authorization.allowed) {
+      const result = blockedResult(task.id, task.target, task.risk, authorization.reason)
+      await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: authorization.reason })
+      return result
+    }
+
+    if (isOperatorAction(task) && !this.supabase) {
+      const reason = "operator_runtime_persistence_required"
+      const result = blockedResult(task.id, task.target, task.risk, reason)
+      await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason })
+      return result
+    }
+
+    if (this.supabase) {
+      const claim = await claimAgentTask(this.supabase, task)
+      if (!claim.claimed) {
+        const result = blockedResult(task.id, task.target, task.risk, claim.reason)
+        await this.emit({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: claim.reason })
+        return result
+      }
+    }
+
+    if (task.risk !== "low") {
+      if (!this.approve) {
+        const reason = "approval_required"
+        return this.blockBeforeExecution(task, reason)
+      }
+      let approval: { approved: boolean; reason?: string }
+      try {
+        approval = await this.approve(task)
+      } catch (error) {
+        return this.failBeforeExecution(task, error instanceof Error ? error.message : "approval_execution_failed")
+      }
+      if (!approval.approved) {
+        const reason = approval.reason ?? "approval_denied"
+        return this.blockBeforeExecution(task, reason)
+      }
+    }
+
+    const postApprovalAuthorization = authorizeAgentTask(task)
+    if (!postApprovalAuthorization.allowed) {
+      const reason = postApprovalAuthorization.reason
+      return this.blockBeforeExecution(task, reason)
+    }
+
+    let actionReservationId: string | null = null
+    let actionReservationSettled = false
+    let externalSideEffectCompleted = false
+
+    if (isOperatorAction(task) && this.policyApprove) {
+      let policyApproval: { approved: boolean; reason?: string; reservationId?: string }
+      try {
+        policyApproval = await this.policyApprove(task)
+      } catch (error) {
+        return this.failBeforeExecution(task, error instanceof Error ? error.message : "execution_policy_check_failed")
+      }
+      if (!policyApproval.approved) {
+        const reason = policyApproval.reason ?? "execution_policy_denied"
+        return this.blockBeforeExecution(task, reason)
+      }
+      actionReservationId = policyApproval.reservationId ?? null
+      if (actionReservationId && this.supabase) {
+        try {
+          const { attachAgentReservation } = await import("./persistence")
+          await attachAgentReservation(this.supabase, task, actionReservationId)
+        } catch {
+          const reason = "agent_reservation_attach_failed"
+          const { releaseAgentReservation } = await import("./persistence")
+          try {
+            await releaseAgentReservation(this.supabase, task, actionReservationId)
+          } catch {
+            const failure: AgentResult = {
+              taskId: task.id,
+              agent: task.target,
+              status: "failed",
+              reason: "agent_reservation_release_failed_after_attach_failure",
+              risk: task.risk,
+              createdAt: Date.now(),
+            }
+            try {
+              await this.publish(
+                { type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: failure.reason },
+                task,
+                failure,
+              )
+            } catch {
+              // Preserve the active reservation rather than falsely reporting it released.
+            }
+            return failure
+          }
+          const result = blockedResult(task.id, task.target, task.risk, reason)
+          await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason }, task, result)
+          return result
+        }
+      }
+    }
+
+    const controller = new AbortController()
+    let timeout: ReturnType<typeof setTimeout> | undefined
+
+    try {
+      // Keep lifecycle publication inside the same failure boundary as execution.
+      // If persistence fails after a reservation was attached, the catch path
+      // must still be able to release that reservation before returning.
+      await this.publish({ type: "task.authorized", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
+      await this.publish({ type: "task.started", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task)
+
+      timeout = setTimeout(() => controller.abort(new Error("agent_runtime_timeout")), this.timeoutMs)
+      if (actionReservationId && this.supabase && isOperatorAction(task)) {
+        const actionType = task.input.actionType
+        if (actionType !== "post" && actionType !== "reply") {
+          throw new Error("operator_action_type_required")
+        }
+        await assertAgentActionReservation(this.supabase, task, actionType)
+      }
+
+      const graphRun = this.graph.invoke(
+        { task, status: "running" },
+        {
+          recursionLimit: this.maxSteps,
+          signal: controller.signal,
+          configurable: { thread_id: task.id, checkpoint_ns: task.target },
+        },
+      )
+      const result = await Promise.race([
+        graphRun,
+        new Promise<never>((_, reject) => {
+          controller.signal.addEventListener(
+            "abort",
+            () => reject(controller.signal.reason ?? new Error("agent_runtime_timeout")),
+            { once: true },
+          )
+        }),
+      ])
+
+      if (result.status === "blocked") {
+        const finalResult = blockedResult(task.id, task.target, task.risk, result.blockedReason ?? "agent_blocked")
+        if (actionReservationId && this.supabase) {
+          const { settleAgentReservation } = await import("./persistence")
+          const released = await settleAgentReservation(this.supabase, task, "released")
+          if (!released) throw new Error("agent_reservation_release_failed")
+          actionReservationSettled = true
+        }
+        await this.publish({ type: "task.blocked", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+        return finalResult
+      }
+      if (result.status === "failed") {
+        const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason: result.blockedReason ?? "agent_failed", risk: task.risk, createdAt: Date.now() }
+        if (actionReservationId && this.supabase) {
+          const { settleAgentReservation } = await import("./persistence")
+          const released = await settleAgentReservation(this.supabase, task, "released")
+          if (!released) throw new Error("agent_reservation_release_failed")
+          actionReservationSettled = true
+        }
+        await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+        return finalResult
+      }
+
+      const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "completed", output: result.outputs[task.target], risk: task.risk, createdAt: Date.now() }
+      externalSideEffectCompleted = Boolean(actionReservationId && isOperatorAction(task))
+
+      // A completed Operator handler means the external X side effect has already
+      // happened. Settle the reservation before non-essential lifecycle publishing;
+      // never release a reservation after an external write has succeeded.
+      if (actionReservationId && this.supabase) {
+        const { settleAgentReservation } = await import("./persistence")
+        try {
+          const settled = await settleAgentReservation(this.supabase, task, "executed")
+          if (!settled) throw new Error("agent_reservation_not_active_after_side_effect")
+          actionReservationSettled = true
+        } catch {
+          const settlementFailure: AgentResult = {
+            taskId: task.id,
+            agent: task.target,
+            status: "failed",
+            reason: "agent_reservation_settlement_failed_after_side_effect",
+            risk: task.risk,
+            createdAt: Date.now(),
+          }
+          await this.publish(
+            { type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: settlementFailure.reason },
+            task,
+            settlementFailure,
+          )
+          return settlementFailure
+        }
+      }
+
+      await this.publish({ type: "task.completed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now() }, task, finalResult)
+      return finalResult
+    } catch (error) {
+      const reason = controller.signal.aborted ? "agent_runtime_timeout" : error instanceof Error ? error.message : "agent_runtime_error"
+      const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason, risk: task.risk, createdAt: Date.now() }
+      if (actionReservationId && this.supabase && !actionReservationSettled && !externalSideEffectCompleted) {
+        const { settleAgentReservation } = await import("./persistence")
+        const released = await settleAgentReservation(this.supabase, task, "released")
+        if (!released) {
+          return {
+            ...finalResult,
+            reason: "agent_reservation_release_failed",
+          }
+        }
+        actionReservationSettled = true
+      }
+      try {
+        await this.publish({ type: "task.failed", taskId: task.id, userId: task.userId, agent: task.target, at: Date.now(), reason: finalResult.reason }, task, finalResult)
+      } catch {
+        // Lifecycle persistence must never cause a reservation release after the
+        // external side-effect boundary, nor should it mask the primary failure.
+      }
+      return finalResult
+    } finally {
+      if (timeout) clearTimeout(timeout)
+      if (!controller.signal.aborted) controller.abort()
+    }
+  }
+
+  createTask = createAgentTask
+}
+
+export function createExecutionPolicyApprovalGate(supabase: SupabaseClient) {
+  return async (task: AgentTask) => {
+    if (task.target !== "operator") return { approved: true }
+    const actionContract = validateOperatorAction(task)
+    if (!actionContract.allowed) {
+      return { approved: false, reason: actionContract.reason }
+    }
+    const actionType = task.input.actionType as "post" | "reply"
+
+    const result = await authorizeAutonomousAction(supabase, task.userId, actionType, {
+      taskId: task.id,
+      targetId: task.resource?.targetId,
+      recipientOptedIn: task.input.recipientOptedIn === true,
+      aiReplyApproved: task.input.aiReplyApproved === true,
+      timezone: typeof task.input.timezone === "string" ? task.input.timezone : undefined,
+    })
+
+    return { approved: result.allowed, reason: result.reason, reservationId: result.reservationId ?? undefined }
+  }
+}

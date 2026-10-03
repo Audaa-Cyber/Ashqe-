@@ -23,7 +23,7 @@
   --border: #242830;
   --input: #111318;
   --ring: #ffffff;
-  --radius: 0.75rem;
+  --radius: 0rem;
 }
 
 .dark { --background:#08090b; --foreground:#f3f3ef; --card:#101216; --card-foreground:#f3f3ef; --popover:#101216; --popover-foreground:#f3f3ef; --primary:#f3f3ef; --primary-foreground:#08090b; --secondary:#15171c; --secondary-foreground:#f3f3ef; --muted:#15171c; --muted-foreground:#8b909b; --accent:#ffffff; --accent-foreground:#0b0d08; --destructive:#ff5c5c; --destructive-foreground:#fff; --border:#242830; --input:#111318; --ring:#ffffff; }
@@ -67,4 +67,9 @@
   .signal-grid { background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 32px 32px; }
   .hairline { border-color: rgba(255,255,255,.09); }
   .focus-ring:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { refreshAccessToken } from "./oauth"
 import { decryptToken, encryptToken } from "@/lib/security/tokens"
+import { fetchPublicTweetsFromIndexer, searchPublicTweets } from "./public-indexers"
 
 export interface XUser {
   id: string
@@ -106,22 +107,8 @@ export async function fetchXMe(accessToken: string): Promise<XUser> {
   return json.data
 }
 
-export async function fetchRecentTweets(accessToken: string, xUserId: string, max = 50): Promise<XTweet[]> {
-  const url = new URL(`https://api.twitter.com/2/users/${xUserId}/tweets`)
-  url.searchParams.set("max_results", String(Math.min(Math.max(max, 5), 100)))
-  url.searchParams.set("exclude", "retweets,replies")
-  url.searchParams.set("tweet.fields", "text,created_at,public_metrics")
-
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`X tweets fetch failed (${res.status}): ${text}`)
-  }
-  const json = (await res.json()) as { data?: XTweet[] }
-  return json.data ?? []
+export async function fetchRecentTweets(_accessToken: string, xUserId: string, max = 50): Promise<XTweet[]> {
+  return await fetchPublicTweetsFromIndexer(xUserId, max)
 }
 
 export async function postTweet(accessToken: string, text: string): Promise<{ id: string; text: string }> {
@@ -154,18 +141,11 @@ export async function postReply(accessToken: string, text: string, inReplyToId: 
 }
 
 
-export async function searchRecentTweets(accessToken: string, query: string, max = 20): Promise<XTweet[]> {
-  const url = new URL("https://api.twitter.com/2/tweets/search/recent")
-  url.searchParams.set("query", query)
-  url.searchParams.set("max_results", String(Math.min(Math.max(max, 10), 100)))
-  url.searchParams.set("tweet.fields", "text,created_at,public_metrics,author_id")
-  const res = await fetch(url.toString(), { headers: { Authorization: "Bearer " + accessToken }, cache: "no-store" })
-  if (!res.ok) throw new Error("X recent search failed (" + res.status + "): " + await res.text())
-  const json = await res.json() as { data?: XTweet[] }
-  return json.data ?? []
+export async function searchRecentTweets(_accessToken: string, query: string, max = 20): Promise<XTweet[]> {
+  return (await searchPublicTweets(query, max)).tweets
 }
 
-export async function fetchRecentMentions(accessToken:string,xUserId:string,max=50):Promise<XTweet[]>{
- const url=new URL("https://api.twitter.com/2/users/"+xUserId+"/mentions");url.searchParams.set("max_results",String(Math.min(Math.max(max,5),100)));url.searchParams.set("tweet.fields","text,created_at,public_metrics,author_id,conversation_id,referenced_tweets");
- const res=await fetch(url.toString(),{headers:{Authorization:"Bearer "+accessToken},cache:"no-store"});if(!res.ok)throw new Error("X mentions fetch failed ("+res.status+"): "+await res.text());const json=await res.json() as {data?:XTweet[]};return json.data||[]
+export async function fetchRecentMentions(_accessToken: string, xUsername: string, max = 50): Promise<XTweet[]> {
+  return searchRecentTweets("", `to:${xUsername.replace(/^@/, "")} -is:retweet`, max)
 }
+
