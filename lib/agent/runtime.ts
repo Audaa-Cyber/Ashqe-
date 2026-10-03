@@ -54,15 +54,10 @@ export class AgentRuntime {
   private async persist(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
     if (!this.supabase) return
     const { recordAgentEvent, startAgentRun, updateAgentRun } = await import("./persistence")
-
-    // State transitions are authoritative. Write the audit event only after the
-    // corresponding durable state change succeeds so the event stream cannot
-    // claim a lifecycle transition that the run table rejected.
+    await recordAgentEvent(this.supabase, task, event)
     if (event.type === "task.started") await startAgentRun(this.supabase, task)
     if (result) await updateAgentRun(this.supabase, task, result)
-    await recordAgentEvent(this.supabase, task, event)
   }
-
   private async publish(event: AgentRuntimeEvent, task: AgentTask, result?: AgentResult) {
     await this.emit(event)
     await this.persist(event, task, result)
