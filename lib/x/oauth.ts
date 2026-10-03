@@ -1,7 +1,7 @@
 import { randomBytes, createHash } from "node:crypto"
 
-export const X_AUTH_URL = "https://twitter.com/i/oauth2/authorize"
-export const X_TOKEN_URL = "https://api.twitter.com/2/oauth2/token"
+export const X_AUTH_URL = "https://x.com/i/oauth2/authorize"
+export const X_TOKEN_URL = "https://api.x.com/2/oauth2/token"
 
 export const X_SCOPES = ["tweet.read", "tweet.write", "users.read", "offline.access"] as const
 
