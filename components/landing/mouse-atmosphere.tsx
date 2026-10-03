@@ -1,19 +1,19 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 
 export default function MouseAtmosphere() {
   const glowRef = useRef<HTMLDivElement>(null)
   const dotRef = useRef<HTMLDivElement>(null)
   const ringRef = useRef<HTMLDivElement>(null)
-  const [interactive, setInteractive] = useState(false)
-  const [pressing, setPressing] = useState(false)
+  const cursorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const glow = glowRef.current
     const dot = dotRef.current
     const ring = ringRef.current
-    if (!glow || !dot || !ring) return
+    const cursor = cursorRef.current
+    if (!glow || !dot || !ring || !cursor) return
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
     const coarsePointer = window.matchMedia("(pointer: coarse)")
@@ -35,12 +35,12 @@ export default function MouseAtmosphere() {
 
       const target = event.target
       if (target instanceof Element) {
-        setInteractive(Boolean(target.closest("a,button,[role='button'],input,textarea,select,[data-cursor='interactive']")))
+        cursor.classList.toggle("is-hovering", Boolean(target.closest("a,button,[role='button'],input,textarea,select,[data-cursor='interactive']")))
       }
     }
 
-    const down = () => setPressing(true)
-    const up = () => setPressing(false)
+    const down = () => cursor.classList.add("is-pressing")
+    const up = () => cursor.classList.remove("is-pressing")
 
     const render = () => {
       currentX += (targetX - currentX) * 0.085
@@ -75,7 +75,7 @@ export default function MouseAtmosphere() {
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div ref={glowRef} className="ashqe-mouse-glow" />
       </div>
-      <div aria-hidden="true" className={`ashqe-premium-cursor ${interactive ? "is-hovering" : ""} ${pressing ? "is-pressing" : ""}`}>
+      <div ref={cursorRef} aria-hidden="true" className="ashqe-premium-cursor">
         <div ref={dotRef} className="ashqe-cursor-dot" />
         <div ref={ringRef} className="ashqe-cursor-ring" />
       </div>
