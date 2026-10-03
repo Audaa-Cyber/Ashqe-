@@ -8,7 +8,14 @@
 @layer components{
 .landing-shell{position:relative;isolation:isolate;background-color:var(--background);background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);background-size:32px 32px}
 .ashqe-surface{background:#101216}
-.ashqe-mouse-glow{position:absolute;top:0;left:0;width:30rem;height:30rem;border-radius:9999px;opacity:.26;filter:blur(58px);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 28%,rgba(255,255,255,.08) 46%,transparent 70%);mix-blend-mode:plus-lighter;will-change:transform}
+.ashqe-mouse-glow{position:absolute;top:0;left:0;width:30rem;height:30rem;border-radius:9999px;opacity:.26;filter:blur(72px);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 28%,rgba(255,255,255,.08) 46%,transparent 70%);mix-blend-mode:screen;will-change:transform}
+.ashqe-premium-cursor{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden}
+.ashqe-cursor-dot,.ashqe-cursor-ring{position:fixed;top:0;left:0;border-radius:9999px;will-change:transform}
+.ashqe-cursor-dot{width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;box-shadow:0 0 14px rgba(255,255,255,.45);opacity:.95}
+.ashqe-cursor-ring{width:34px;height:34px;margin:-17px 0 0 -17px;border:1px solid rgba(255,255,255,.48);background:rgba(255,255,255,.025);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1),margin .28s cubic-bezier(.22,1,.36,1),border-color .28s ease,background-color .28s ease,opacity .28s ease}
+.ashqe-premium-cursor.is-hovering .ashqe-cursor-ring{width:48px;height:48px;margin:-24px 0 0 -24px;border-color:rgba(255,255,255,.72);background:rgba(255,255,255,.06)}
+.ashqe-premium-cursor.is-pressing .ashqe-cursor-ring{width:28px;height:28px;margin:-14px 0 0 -14px;background:rgba(255,255,255,.1)}
+@media (pointer:coarse),(prefers-reduced-motion:reduce){.ashqe-premium-cursor{display:none!important}}
 .ashqe-display{font-family:var(--font-display),sans-serif;letter-spacing:-.045em}
 .ashqe-mono{font-family:var(--font-mono),monospace;letter-spacing:.02em}
 .hairline{border-color:rgba(255,255,255,.09)}
