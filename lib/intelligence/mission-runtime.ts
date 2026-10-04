@@ -124,3 +124,38 @@ export async function completeMissionStep(
   return { result: data, mission, completed: Boolean(data?.completed) }
 }
 
+
+
+export async function waitForMissionApproval(
+  supabase: SupabaseClient,
+  input: { userId: string; missionId: string; stepId: string },
+) {
+  const { data: step, error } = await supabase
+    .from("ashqe_mission_steps")
+    .select("id,status")
+    .eq("id", input.stepId)
+    .eq("mission_id", input.missionId)
+    .maybeSingle()
+  if (error || !step) throw new Error("mission_step_not_found")
+  if (!["ready","running","waiting_approval"].includes(step.status)) throw new Error("mission_step_not_approvable")
+  const { data, error: updateError } = await supabase
+    .from("ashqe_mission_steps")
+    .update({ status: "waiting_approval" })
+    .eq("id", input.stepId)
+    .eq("mission_id", input.missionId)
+    .in("status", ["ready","running"])
+    .select("id,status")
+    .maybeSingle()
+  if (updateError) throw new Error("mission_approval_request_failed")
+  if (!data) throw new Error("mission_approval_request_conflict")
+  const mission = await transitionMission(supabase, {
+    userId: input.userId, missionId: input.missionId,
+    from: "running", to: "waiting_approval",
+  }).catch(async () => {
+    const { data: current } = await supabase.from("ashqe_missions").select("id,status").eq("id",input.missionId).eq("user_id",input.userId).maybeSingle()
+    if (!current) throw new Error("mission_not_found")
+    if (current.status === "waiting_approval") return current
+    throw new Error("mission_approval_transition_conflict")
+  })
+  return { mission, step: data }
+}
