@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { fetchRecentTweets, type XTweet } from "@/lib/x/api"
+import type { XTweet } from "@/lib/x/api"
 
 export type VerificationResult = {
   status: "verified" | "contradicted" | "unknown"
@@ -38,7 +38,7 @@ export async function verifyXWrite(
   }
 
   const url = new URL(`https://api.x.com/2/tweets/${encodeURIComponent(input.expected.tweetId)}`)
-  url.searchParams.set("tweet.fields", "author_id,conversation_id,created_at,public_metrics")
+  url.searchParams.set("tweet.fields", "author_id,conversation_id,created_at,public_metrics,referenced_tweets")
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
@@ -51,7 +51,7 @@ export async function verifyXWrite(
     return { status: "unknown", confidence: 0, expected: input.expected, observed: {}, reason: `x_readback_failed_${response.status}` }
   }
 
-  const json = await response.json() as { data?: XTweet & { conversation_id?: string } }
+  const json = await response.json() as { data?: XTweet & { conversation_id?: string; referenced_tweets?: Array<{ type: string; id: string }> } }
   const observed = json.data
   if (!observed) {
     return { status: "unknown", confidence: 0, expected: input.expected, observed: {}, reason: "tweet_missing_from_response" }
@@ -60,7 +60,7 @@ export async function verifyXWrite(
   const authorMatches = observed.author_id === input.expected.authorId
   const textMatches = normalizeText(observed.text) === normalizeText(input.expected.text)
   const idMatches = observed.id === input.expected.tweetId
-  const replyMatches = !input.expected.replyToId || observed.conversation_id === input.expected.replyToId || observed.id === input.expected.replyToId
+  const replyMatches = !input.expected.replyToId || (observed.referenced_tweets ?? []).some((ref) => ref.type === "replied_to" && ref.id === input.expected.replyToId)
 
   const matched = [authorMatches, textMatches, idMatches, replyMatches].filter(Boolean).length
   const confidence = matched / 4
@@ -70,7 +70,7 @@ export async function verifyXWrite(
     status,
     confidence,
     expected: input.expected,
-    observed: { id: observed.id, authorId: observed.author_id, text: observed.text, conversationId: observed.conversation_id },
+    observed: { id: observed.id, authorId: observed.author_id, text: observed.text, conversationId: observed.conversation_id, referencedTweets: observed.referenced_tweets ?? [] },
     reason: status === "verified" ? undefined : "x_readback_mismatch",
   }
 }
