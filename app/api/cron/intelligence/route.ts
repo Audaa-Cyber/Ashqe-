@@ -1,56 +1,47 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { runIntelligenceCycle } from "@/lib/intelligence/autonomous-loop"
 import { executeMissionStep } from "@/lib/intelligence/mission-executor"
 
-export const dynamic = "force-dynamic"
-export const maxDuration = 60
+export const dynamic="force-dynamic"
+export const maxDuration=60
 
-export async function GET(request: Request) {
-  const auth = request.headers.get("authorization")
-  if (!process.env.CRON_SECRET || auth !== "Bearer " + process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+export async function GET(request:Request){
+  if(request.headers.get("authorization")!=="Bearer "+process.env.CRON_SECRET||!process.env.CRON_SECRET)
+    return NextResponse.json({error:"unauthorized"},{status:401})
+
+  const admin=createAdminClient()
+  const recovered=await admin.rpc("ashqe_recover_stale_mission_steps",{p_now:new Date().toISOString(),p_limit:50})
+  if(recovered.error)return NextResponse.json({error:"mission_watchdog_recovery_failed"},{status:500})
+
+  const {data:signals,error:signalError}=await admin.from("ashqe_signals").select("user_id")
+    .order("created_at",{ascending:false}).limit(1000)
+  if(signalError)return NextResponse.json({error:"intelligence_user_scan_failed"},{status:500})
+
+  const users=[...new Set((signals??[]).map(row=>row.user_id).filter((id):id is string=>typeof id==="string"))].slice(0,25)
+  const intelligence:Array<Record<string,unknown>>=[]
+  for(const userId of users){
+    try{intelligence.push({userId,status:"ok",cycle:await runIntelligenceCycle(admin,userId)})}
+    catch(error){intelligence.push({userId,status:"failed",reason:error instanceof Error?error.message:"intelligence_cycle_failed"})}
   }
 
-  const admin = createAdminClient()
-  const now = new Date().toISOString()
-  const { data: recovered, error: recoveryError } = await admin.rpc("ashqe_recover_stale_mission_steps", { p_now: now, p_limit: 25 })
-  if (recoveryError) return NextResponse.json({ error: "mission_watchdog_recovery_failed" }, { status: 500 })
+  const {data:missions,error:missionError}=await admin.from("ashqe_missions")
+    .select("id,user_id,status,current_step").in("status",["planned","ready"]).order("created_at",{ascending:true}).limit(25)
+  if(missionError)return NextResponse.json({error:"mission_queue_read_failed",intelligence},{status:500})
 
-  const { data: missions, error } = await admin
-    .from("ashqe_missions")
-    .select("id,user_id,status,current_step")
-    .in("status", ["planned", "ready"])
-    .order("created_at", { ascending: true })
-    .limit(10)
-
-  if (error) return NextResponse.json({ error: "mission_queue_read_failed" }, { status: 500 })
-
-  const results: Array<Record<string, unknown>> = []
-  for (const mission of missions ?? []) {
-    try {
-      if (mission.status === "planned") {
-        const { data: started } = await admin
-          .from("ashqe_missions")
-          .update({ status: "ready" })
-          .eq("id", mission.id).eq("user_id", mission.user_id).eq("status", "planned")
-          .select("id")
-          .maybeSingle()
-        if (!started) continue
+  const execution:Array<Record<string,unknown>>=[]
+  for(const mission of missions??[]){
+    try{
+      if(mission.status==="planned"){
+        const {data:started}=await admin.from("ashqe_missions").update({status:"ready"})
+          .eq("id",mission.id).eq("user_id",mission.user_id).eq("status","planned").select("id").maybeSingle()
+        if(!started)continue
       }
-      const result = await executeMissionStep(admin, {
-        userId: mission.user_id,
-        missionId: mission.id,
-        position: Number(mission.current_step ?? 0),
-      })
-      results.push({ missionId: mission.id, status: "processed", result })
-    } catch (err) {
-      results.push({
-        missionId: mission.id,
-        status: "failed",
-        reason: err instanceof Error ? err.message : "mission_execution_failed",
-      })
-    }
+      execution.push({missionId:mission.id,status:"processed",result:await executeMissionStep(admin,{
+        userId:mission.user_id,missionId:mission.id,position:Number(mission.current_step??0)
+      })})
+    }catch(error){execution.push({missionId:mission.id,status:"failed",reason:error instanceof Error?error.message:"mission_execution_failed"})}
   }
 
-  return NextResponse.json({ recovered: recovered ?? 0, processed: results.length, results })
+  return NextResponse.json({recovered:recovered.data??0,users:users.length,intelligence,processed:execution.length,execution})
 }
