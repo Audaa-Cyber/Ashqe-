@@ -98,6 +98,9 @@ begin
 end;
 $$;
 
+create unique index if not exists ashqe_evidence_source_unique
+  on public.ashqe_evidence_sources(source_type,source_id);
+
 -- Atomic candidate-decision approval -> mission + step + decision/opportunity state.
 create or replace function public.ashqe_approve_decision_create_mission(
   p_user_id uuid,
