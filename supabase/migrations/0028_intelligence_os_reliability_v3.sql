@@ -38,6 +38,9 @@ declare
   v_token uuid := gen_random_uuid();
   v_now timestamptz := now();
 begin
+  if auth.role() <> 'service_role' and auth.uid() is distinct from p_user_id then
+    raise exception 'intelligence_cycle_owner_mismatch';
+  end if;
   if not exists (select 1 from public.ashqe_execution_policy where user_id = p_user_id) then
     raise exception 'intelligence_cycle_user_not_found';
   end if;
@@ -80,6 +83,10 @@ declare
   v_now timestamptz := now();
   v_count integer;
 begin
+  if auth.role() <> 'service_role' and auth.uid() is distinct from p_user_id then
+    raise exception 'intelligence_cycle_owner_mismatch';
+  end if;
+
   update public.ashqe_intelligence_cycle_locks
     set lease_expires_at = v_now,
         last_completed_at = case when p_error is null then v_now else last_completed_at end,
@@ -180,9 +187,9 @@ end;
 $$;
 
 
-revoke all on function public.ashqe_claim_intelligence_cycle(uuid,integer) from public, anon, authenticated;
-revoke all on function public.ashqe_release_intelligence_cycle(uuid,uuid,text) from public, anon, authenticated;
+revoke all on function public.ashqe_claim_intelligence_cycle(uuid,integer) from public, anon;
+revoke all on function public.ashqe_release_intelligence_cycle(uuid,uuid,text) from public, anon;
 revoke all on function public.ashqe_approve_decision_create_mission(uuid,uuid,jsonb,jsonb,timestamptz) from public, anon;
-grant execute on function public.ashqe_claim_intelligence_cycle(uuid,integer) to service_role;
-grant execute on function public.ashqe_release_intelligence_cycle(uuid,uuid,text) to service_role;
+grant execute on function public.ashqe_claim_intelligence_cycle(uuid,integer) to authenticated, service_role;
+grant execute on function public.ashqe_release_intelligence_cycle(uuid,uuid,text) to authenticated, service_role;
 grant execute on function public.ashqe_approve_decision_create_mission(uuid,uuid,jsonb,jsonb,timestamptz) to authenticated, service_role;
