@@ -11,6 +11,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   users_me_failed: "Couldn't read your X profile.",
   db_upsert_failed: "Couldn't save your connection. Please try again.",
   access_denied: "You declined the X authorization.",
+  supabase_session_failed: "X was authorized, but Ashqe could not establish your secure session. Please try connecting again.",
 }
 
 export default function ConnectXForm({ error, email: _email }: { error: string | null; email: string }) {

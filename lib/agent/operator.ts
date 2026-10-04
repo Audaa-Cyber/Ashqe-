@@ -3,6 +3,8 @@ import { getValidAccessToken, postReply, postTweet } from "../x/api"
 import type { AgentHandler } from "./graph/workflow"
 import { isOperatorAction, validateOperatorAction } from "./contracts"
 import { assertAgentActionReservation } from "./persistence"
+import { finalizeVerifiedXAction } from "./verification"
+import { validateVoice } from "../intelligence/voice-validator"
 
 function requiredText(taskInput: Record<string, unknown>) {
   const text = typeof taskInput.text === "string" ? taskInput.text.trim() : ""
@@ -30,6 +32,8 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
 
     const text = requiredText(task.input)
     const targetId = task.resource?.targetId
+    const voice = await validateVoice(supabase, { userId: task.userId, text, evidence: typeof task.input.targetText === "string" ? [{ claim: task.input.targetText, source: targetId }] : [] })
+    if (voice.status !== "pass") throw new Error(voice.status === "block" ? "voice_validation_blocked" : "voice_validation_requires_review")
 
     const connection = await getValidAccessToken(supabase, task.userId)
     if (!connection) throw new Error("x_not_connected")
@@ -41,27 +45,23 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
       // X request so a reservation cannot expire during token lookup.
       await assertAgentActionReservation(supabase, task, actionType)
       const posted = await postReply(connection.access_token, text, targetId)
-      return {
-        taskId: task.id,
-        agent: task.target,
-        status: "completed",
-        output: { actionType, id: posted.id, text: posted.text },
-        risk: task.risk,
-        createdAt: Date.now(),
+      const result = { taskId: task.id, agent: task.target, status: "completed" as const, output: { actionType, id: posted.id, text: posted.text }, risk: task.risk, createdAt: Date.now() }
+      const verification = await finalizeVerifiedXAction(supabase, task, result)
+      if (!verification.verified) {
+        return { ...result, status: "failed" as const, reason: "x_write_verification_failed" }
       }
+      return result
     }
 
     // Keep the final authorization check immediately adjacent to the external
     // X request so a reservation cannot expire during token lookup.
     await assertAgentActionReservation(supabase, task, actionType)
     const posted = await postTweet(connection.access_token, text)
-    return {
-      taskId: task.id,
-      agent: task.target,
-      status: "completed",
-      output: { actionType, id: posted.id, text: posted.text },
-      risk: task.risk,
-      createdAt: Date.now(),
+    const result = { taskId: task.id, agent: task.target, status: "completed" as const, output: { actionType, id: posted.id, text: posted.text }, risk: task.risk, createdAt: Date.now() }
+    const verification = await finalizeVerifiedXAction(supabase, task, result)
+    if (!verification.verified) {
+      return { ...result, status: "failed" as const, reason: "x_write_verification_failed" }
     }
+    return result
   }
 }

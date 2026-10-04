@@ -250,6 +250,9 @@ export class AgentRuntime {
       }
       if (result.status === "failed") {
         const finalResult: AgentResult = { taskId: task.id, agent: task.target, status: "failed", reason: result.blockedReason ?? "agent_failed", risk: task.risk, createdAt: Date.now() }
+        // A failed Operator graph result is still inside the reservation lifecycle.
+        // The handler never settles it directly, so the runtime remains the sole owner
+        // of releasing the reservation on verification or handler failure.
         if (actionReservationId && this.supabase) {
           const { settleAgentReservation } = await import("./persistence")
           const released = await settleAgentReservation(this.supabase, task, "released")
