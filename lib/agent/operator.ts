@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getValidAccessToken, postReply, postTweet } from "../x/api"
 import type { AgentHandler } from "./graph/workflow"
 import { isOperatorAction, validateOperatorAction } from "./contracts"
-import { assertAgentActionReservation, settleAgentReservation } from "./persistence"
+import { assertAgentActionReservation } from "./persistence"
 import { finalizeVerifiedXAction } from "./verification"
 import { validateVoice } from "../intelligence/voice-validator"
 
@@ -48,7 +48,6 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
       const result = { taskId: task.id, agent: task.target, status: "completed" as const, output: { actionType, id: posted.id, text: posted.text }, risk: task.risk, createdAt: Date.now() }
       const verification = await finalizeVerifiedXAction(supabase, task, result)
       if (!verification.verified) {
-        await settleAgentReservation(supabase, task, "released")
         return { ...result, status: "failed" as const, reason: "x_write_verification_failed" }
       }
       return result
