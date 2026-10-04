@@ -121,6 +121,9 @@ declare
   v_existing_mission_id uuid;
   v_existing_mission_status text;
 begin
+  if auth.role() <> 'service_role' and auth.uid() is distinct from p_user_id then
+    raise exception 'decision_owner_mismatch';
+  end if;
   if not exists (select 1 from auth.users where id = p_user_id) then
     raise exception 'decision_owner_mismatch';
   end if;
