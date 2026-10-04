@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { claimNextMissionStep, transitionMission, failMissionWithRecovery } from "@/lib/intelligence/mission-runtime"
+import { claimNextMissionStep, transitionMission, failMissionWithRecovery, completeMissionStep, waitForMissionApproval } from "@/lib/intelligence/mission-runtime"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -32,6 +32,21 @@ export async function POST(request: Request) {
       const step = await claimNextMissionStep(supabase, { userId: user.id, missionId, position })
       const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "running", checkpoint: { ...(mission.checkpoint ?? {}), claimedStepId: step.id } })
       return NextResponse.json({ mission: next, step })
+    }
+
+    if (operation === "complete_step") {
+      const stepId = typeof body.stepId === "string" ? body.stepId : ""
+      if (!stepId) return NextResponse.json({ error: "stepId_required" }, { status: 400 })
+      const output = body.output && typeof body.output === "object" ? body.output : {}
+      const result = await completeMissionStep(supabase, { userId: user.id, missionId, stepId, output, verificationId: typeof body.verificationId === "string" ? body.verificationId : undefined })
+      return NextResponse.json(result)
+    }
+
+    if (operation === "request_approval") {
+      const stepId = typeof body.stepId === "string" ? body.stepId : ""
+      if (!stepId) return NextResponse.json({ error: "stepId_required" }, { status: 400 })
+      const result = await waitForMissionApproval(supabase, { userId: user.id, missionId, stepId })
+      return NextResponse.json(result)
     }
 
     if (operation === "pause") {
