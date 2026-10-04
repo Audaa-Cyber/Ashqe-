@@ -4,6 +4,7 @@ import {getValidAccessToken,fetchRecentTweets} from "@/lib/x/api"
 import {buildContentGenome,buildDailyBriefing,buildRelationshipGraph} from "@/lib/intelligence/core"
 import {buildOpportunities} from "@/lib/x/opportunity-engine"
 import type {XSignalCandidate} from "@/lib/x/signal-engine"
+import type { XTweet } from "@/lib/x/api"
 
 export async function GET(){
  const supabase=await createClient()
@@ -23,7 +24,7 @@ export async function GET(){
    sourceUrl:typeof s.source_url==="string"?s.source_url:"",
    metadata:(s.metadata||{}) as Record<string,unknown>,
  }))
- let tweets=[]
+ let tweets: XTweet[] = []
  if(conn){
    try{tweets=await fetchRecentTweets(conn.access_token,conn.x_user_id,100)}catch{tweets=[]}
  }
