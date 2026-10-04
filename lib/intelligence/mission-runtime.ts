@@ -91,3 +91,94 @@ export async function claimNextMissionStep(
   if (!data) throw new Error("mission_step_already_claimed")
   return data
 }
+
+export async function completeMissionStep(
+  supabase: SupabaseClient,
+  input: { userId: string; missionId: string; stepId: string; output?: Record<string, unknown>; verificationId?: string },
+) {
+  const { data: step, error: stepError } = await supabase
+    .from("ashqe_mission_steps")
+    .update({
+      status: "completed",
+      output: input.output ?? {},
+      verification_id: input.verificationId ?? null,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", input.stepId)
+    .eq("mission_id", input.missionId)
+    .eq("status", "running")
+    .select("id,position,status,output,verification_id")
+    .maybeSingle()
+  if (stepError) throw new Error("mission_step_complete_failed")
+  if (!step) throw new Error("mission_step_completion_conflict")
+
+  const nextPosition = step.position + 1
+  const { data: nextStep } = await supabase
+    .from("ashqe_mission_steps")
+    .select("id,position,status")
+    .eq("mission_id", input.missionId)
+    .eq("position", nextPosition)
+    .maybeSingle()
+
+  const checkpoint = {
+    completedStepId: step.id,
+    completedAt: new Date().toISOString(),
+    verificationId: input.verificationId ?? null,
+  }
+
+  if (nextStep) {
+    await supabase
+      .from("ashqe_mission_steps")
+      .update({ status: "ready" })
+      .eq("id", nextStep.id)
+      .eq("status", "pending")
+
+    const { data: mission, error } = await supabase
+      .from("ashqe_missions")
+      .update({ current_step: nextPosition, checkpoint })
+      .eq("id", input.missionId)
+      .eq("user_id", input.userId)
+      .eq("status", "running")
+      .select("id,status,current_step,checkpoint")
+      .maybeSingle()
+    if (error || !mission) throw new Error("mission_checkpoint_update_failed")
+    return { step, mission, completed: false }
+  }
+
+  const { data: mission, error } = await supabase
+    .from("ashqe_missions")
+    .update({ status: "completed", current_step: step.position, checkpoint, completed_at: new Date().toISOString() })
+    .eq("id", input.missionId)
+    .eq("user_id", input.userId)
+    .eq("status", "running")
+    .select("id,status,current_step,checkpoint,completed_at")
+    .maybeSingle()
+  if (error || !mission) throw new Error("mission_completion_conflict")
+  return { step, mission, completed: true }
+}
+
+export async function waitForMissionApproval(
+  supabase: SupabaseClient,
+  input: { userId: string; missionId: string; stepId: string },
+) {
+  const { data, error } = await supabase
+    .from("ashqe_mission_steps")
+    .update({ status: "waiting_approval" })
+    .eq("id", input.stepId)
+    .eq("mission_id", input.missionId)
+    .eq("status", "ready")
+    .select("id,status")
+    .maybeSingle()
+  if (error) throw new Error("mission_approval_boundary_failed")
+  if (!data) throw new Error("mission_approval_boundary_conflict")
+  const { data: mission, error: missionError } = await supabase
+    .from("ashqe_missions")
+    .update({ status: "waiting_approval", checkpoint: { waitingStepId: input.stepId, waitingAt: new Date().toISOString() } })
+    .eq("id", input.missionId)
+    .eq("user_id", input.userId)
+    .in("status", ["ready", "running"])
+    .select("id,status,current_step,checkpoint")
+    .maybeSingle()
+  if (missionError || !mission) throw new Error("mission_approval_transition_failed")
+  return { step: data, mission }
+}
