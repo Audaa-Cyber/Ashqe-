@@ -60,7 +60,6 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
     const result = { taskId: task.id, agent: task.target, status: "completed" as const, output: { actionType, id: posted.id, text: posted.text }, risk: task.risk, createdAt: Date.now() }
     const verification = await finalizeVerifiedXAction(supabase, task, result)
     if (!verification.verified) {
-      await settleAgentReservation(supabase, task, "released")
       return { ...result, status: "failed" as const, reason: "x_write_verification_failed" }
     }
     return result
