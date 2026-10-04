@@ -33,7 +33,7 @@ returns uuid
 language plpgsql
 security definer
 set search_path = public
-as $
+as $function$
 declare
   v_token uuid := gen_random_uuid();
   v_now timestamptz := now();
@@ -67,7 +67,7 @@ begin
   end if;
   return v_token;
 end;
-$$;
+$function$;
 
 create or replace function public.ashqe_release_intelligence_cycle(
   p_user_id uuid,
@@ -78,7 +78,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = public
-as $
+as $function$
 declare
   v_now timestamptz := now();
   v_count integer;
@@ -96,7 +96,7 @@ begin
   get diagnostics v_count = row_count;
   return v_count = 1;
 end;
-$$;
+$function$;
 
 create unique index if not exists ashqe_evidence_source_unique
   on public.ashqe_evidence_sources(source_type,source_id);
@@ -113,7 +113,7 @@ returns table(mission_id uuid, reused boolean, action text)
 language plpgsql
 security definer
 set search_path = public
-as $
+as $function$
 declare
   v_decision public.ashqe_decisions%rowtype;
   v_opportunity public.ashqe_opportunities%rowtype;
@@ -189,7 +189,7 @@ begin
   mission_id := v_mission.id; reused := false; action := v_decision.selected_action;
   return next;
 end;
-$$;
+$function$;
 
 
 revoke all on function public.ashqe_claim_intelligence_cycle(uuid,integer) from public, anon;
