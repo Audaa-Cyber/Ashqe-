@@ -32,6 +32,10 @@ export async function transitionMission(
     status: input.to,
     checkpoint: input.checkpoint ?? {},
   }
+  if (["ready","running","completed"].includes(input.to)) {
+    update.failure_class = null
+    update.recovery_strategy = null
+  }
   if (failure) {
     update.failure_class = failure.classification.type
     update.recovery_strategy = failure.next
