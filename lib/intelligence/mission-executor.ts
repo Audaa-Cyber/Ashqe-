@@ -5,7 +5,7 @@ import { fetchRecentTweets, getValidAccessToken } from "@/lib/x/api"
 import { AgentRuntime, type AgentHandlerMap } from "@/lib/agent"
 import { createAgentTask } from "@/lib/agent/orchestrator"
 import { getAgentDefinition } from "@/lib/agent/registry"
-import { claimNextMissionStep, completeMissionStep, failMissionWithRecovery, transitionMission } from "./mission-runtime"
+import { claimNextMissionStep, completeMissionStep, failMissionWithRecovery, transitionMission, heartbeatMissionStep } from "./mission-runtime"
 
 type MissionRow = {
   id: string
@@ -126,11 +126,14 @@ export async function executeMissionStep(supabase: SupabaseClient, input: {
 
   const ceiling = capabilities(mission.authority_ceiling)
   const requested = capabilities(step.required_capabilities)
-  if (requested.some(cap => !ceiling.includes(cap)) && target === "operator") {
+  if (!requested.length || requested.some(cap => !ceiling.includes(cap))) {
     await failMissionWithRecovery(supabase, { userId: input.userId, missionId: mission.id, reason: "capability outside mission authority ceiling" })
     throw new Error("mission_authority_escalation")
   }
 
+  if (mission.status === "ready") {
+    await transitionMission(supabase, { userId: input.userId, missionId: mission.id, from: "ready", to: "running", checkpoint: mission.checkpoint ?? {} })
+  }
   const claimed = await claimNextMissionStep(supabase, { userId: input.userId, missionId: mission.id, position })
   const task = createAgentTask({
     userId: input.userId,
@@ -156,7 +159,13 @@ export async function executeMissionStep(supabase: SupabaseClient, input: {
     approve: async () => ({ approved: true }),
   })
 
-  const result = await runtime.dispatch(task)
+  const heartbeat = setInterval(() => { void heartbeatMissionStep(supabase, { userId: input.userId, missionId: mission.id, stepId: claimed.id, leaseSeconds: 120 }).catch(() => undefined) }, 45_000)
+  let result
+  try {
+    result = await runtime.dispatch(task)
+  } finally {
+    clearInterval(heartbeat)
+  }
   if (result.status !== "completed") {
     await supabase.from("ashqe_mission_steps").update({ status: "failed", output: { reason: result.reason ?? "agent_failed", taskId: task.id } })
       .eq("id", claimed.id).eq("status", "running")
