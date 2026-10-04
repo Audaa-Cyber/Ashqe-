@@ -83,7 +83,7 @@ export async function decayRelationships(
 ) {
   const cutoff = new Date(Date.now() - Math.max(1, maxAgeDays) * 86400000).toISOString()
   const { data: stale } = await supabase.from("ashqe_relationships")
-    .select("id,relationship_score,trajectory")
+    .select("id,relationship_score,trajectory,confidence")
     .eq("user_id", userId)
     .lt("last_interaction_at", cutoff)
     .limit(500)
