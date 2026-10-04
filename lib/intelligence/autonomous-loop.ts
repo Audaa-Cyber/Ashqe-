@@ -116,6 +116,7 @@ export async function runIntelligenceCycle(supabase: SupabaseClient, userId: str
 
     const opportunities = buildOpportunities((signals??[]) as never[],tweets,25)
     const persisted: Array<Record<string,unknown>> = []
+    const seenFingerprints = new Set<string>()
 
     const relationshipSubjects = new Set<string>()
     for (const opportunity of opportunities) {
@@ -150,6 +151,9 @@ export async function runIntelligenceCycle(supabase: SupabaseClient, userId: str
         window: opportunity.metadata.last_seen_at ? String(opportunity.metadata.last_seen_at).slice(0,13) : now.slice(0,13),
       })
       const freshness = freshnessScore(opportunity.metadata.last_seen_at ? String(opportunity.metadata.last_seen_at) : undefined)
+      if (seenFingerprints.has(fingerprint)) continue
+      seenFingerprints.add(fingerprint)
+      if (freshness <= 0) continue
 
       const candidates = ACTIONS.map(action => ({
         id: `${fingerprint}:${action}`,
