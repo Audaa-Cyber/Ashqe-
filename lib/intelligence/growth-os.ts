@@ -119,9 +119,28 @@ export async function evaluateExperiment(
     ? (treatmentMean - controlMean) / Math.abs(controlMean)
     : null
   const minimumSamples = Math.max(10, Number((experiment.metadata as Record<string, unknown> | null)?.minimumSamples) || 20)
+  const variance = (values: number[], average: number | null) => {
+    if (!average || values.length < 2) return 0
+    return values.reduce((sum, value) => sum + (value - average) ** 2, 0) / (values.length - 1)
+  }
+  const controlVariance = variance(control, controlMean)
+  const treatmentVariance = variance(treatment, treatmentMean)
+  const standardError = control.length && treatment.length
+    ? Math.sqrt((controlVariance / control.length) + (treatmentVariance / treatment.length))
+    : null
+  const effectSize = relativeLift !== null && standardError && standardError > 0 && controlMean !== null && treatmentMean !== null
+    ? (treatmentMean - controlMean) / standardError
+    : null
   const decision = control.length >= minimumSamples && treatment.length >= minimumSamples
-    ? relativeLift !== null && relativeLift > 0 ? "treatment_leading" : "control_leading"
+    ? relativeLift !== null && effectSize !== null && effectSize >= 1.96
+      ? "treatment_leading"
+      : relativeLift !== null && effectSize !== null && effectSize <= -1.96
+        ? "control_leading"
+        : "inconclusive"
     : "insufficient_sample"
 
-  return { experimentId, controlSamples: control.length, treatmentSamples: treatment.length, controlMean, treatmentMean, relativeLift, decision }
+  return {
+    experimentId, controlSamples: control.length, treatmentSamples: treatment.length,
+    controlMean, treatmentMean, relativeLift, effectSize, standardError, decision,
+  }
 }
