@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { claimNextMissionStep, transitionMission, failMissionWithRecovery, completeMissionStep, waitForMissionApproval } from "@/lib/intelligence/mission-runtime"
 import { executeMissionStep } from "@/lib/intelligence/mission-executor"
+import { approveDecisionAndCreateMission } from "@/lib/intelligence/decision-mission"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -11,6 +12,16 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
   const missionId = typeof body.missionId === "string" ? body.missionId : ""
   const operation = typeof body.operation === "string" ? body.operation : ""
+  if (operation === "approve_decision") {
+    const decisionId = typeof body.decisionId === "string" ? body.decisionId : ""
+    if (!decisionId) return NextResponse.json({ error: "decisionId_required" }, { status: 400 })
+    try {
+      const result = await approveDecisionAndCreateMission(supabase, { userId: user.id, decisionId })
+      return NextResponse.json(result, { status: result.reused ? 200 : 201 })
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "decision_approval_failed" }, { status: 409 })
+    }
+  }
   if (!missionId || !operation) return NextResponse.json({ error: "missionId_and_operation_required" }, { status: 400 })
 
   const { data: mission } = await supabase
