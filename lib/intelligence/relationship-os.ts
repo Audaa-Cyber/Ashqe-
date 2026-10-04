@@ -45,8 +45,8 @@ export async function updateRelationship(
   const trajectory = Math.max(-1, Math.min(1, relationship - Number(prior.relationship_score)))
   const confidence = clamp01(Number(prior.confidence) * .75 + .25)
   const unresolvedLoops = signal.interactionType === "conversation" || signal.interactionType === "reply"
-    ? Math.max(0, Number(prior.unresolved_loops) || 0)
-    : Math.max(0, Number(prior.unresolved_loops) || 0)
+    ? Math.max(0, (Number(prior.unresolved_loops) || 0) - 1)
+    : Math.min(20, Math.max(0, Number(prior.unresolved_loops) || 0) + (signal.interactionType === "bd" ? 1 : 0))
 
   const { data, error } = await supabase.from("ashqe_relationships").upsert({
     user_id: userId,
@@ -60,12 +60,15 @@ export async function updateRelationship(
     unresolved_loops: unresolvedLoops,
     confidence,
     last_interaction_at: signal.observedAt ?? new Date().toISOString(),
-    evidence: [{
-      type: signal.interactionType,
-      observedAt: signal.observedAt ?? new Date().toISOString(),
-      reach,
-      relevance,
-    }],
+    evidence: [
+      ...(Array.isArray(existing?.evidence) ? existing.evidence.slice(-19) : []),
+      {
+        type: signal.interactionType,
+        observedAt: signal.observedAt ?? new Date().toISOString(),
+        reach,
+        relevance,
+      },
+    ],
     metadata: {
       ...(existing?.metadata ?? {}),
       lastSignal: signal.interactionType,
