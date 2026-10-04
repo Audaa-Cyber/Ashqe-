@@ -119,3 +119,24 @@ export function classifyFailureForRecovery(reason: string): {
 
   return { type: "unknown", retryable: false }
 }
+
+export type DecisionCandidate = DecisionInputs & {
+  id: string
+  opportunityId: string
+  action: DecisionAction
+  score: number
+  expiresAt?: string
+}
+
+export function rankDecisionCandidates(candidates: DecisionCandidate[]) {
+  return [...candidates]
+    .filter((candidate) => !candidate.expiresAt || Date.parse(candidate.expiresAt) > Date.now())
+    .sort((a, b) => b.score - a.score)
+}
+
+export function freshnessScore(observedAt: string | undefined, halfLifeMs = 6 * 60 * 60 * 1000) {
+  if (!observedAt) return 0
+  const age = Math.max(0, Date.now() - Date.parse(observedAt))
+  if (!Number.isFinite(age)) return 0
+  return Math.pow(0.5, age / Math.max(1, halfLifeMs))
+}
