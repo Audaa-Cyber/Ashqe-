@@ -78,22 +78,29 @@ export async function claimNextMissionStep(
   supabase: SupabaseClient,
   input: { userId: string; missionId: string; position: number },
 ) {
-  const { data: mission } = await supabase.from("ashqe_missions").select("id,status,current_step,attempt").eq("id", input.missionId).eq("user_id", input.userId).maybeSingle()
-  if (!mission) throw new Error("mission_not_found")
-  if (!["ready","running"].includes(mission.status)) throw new Error("mission_not_executable")
-  if (mission.current_step !== input.position) throw new Error("mission_step_not_current")
-  const lease = new Date(Date.now() + 2 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
-    .from("ashqe_mission_steps")
-    .update({ status: "running", attempt: 1, started_at: new Date().toISOString(), lease_expires_at: lease, last_heartbeat_at: new Date().toISOString() })
-    .eq("mission_id", input.missionId)
-    .eq("position", input.position)
-    .eq("status", "ready")
-    .select("id,position,objective,status,attempt,input,output,verification_id,task_id,lease_expires_at")
-    .maybeSingle()
-  if (error) throw new Error("mission_step_claim_failed")
-  if (!data) throw new Error("mission_step_already_claimed")
+  const { data, error } = await supabase.rpc("ashqe_claim_mission_step", {
+    p_user_id: input.userId,
+    p_mission_id: input.missionId,
+    p_position: input.position,
+    p_lease_seconds: 120,
+  })
+  if (error || !data) throw new Error(error?.message ?? "mission_step_claim_failed")
   return data
+}
+
+export async function heartbeatMissionStep(
+  supabase: SupabaseClient,
+  input: { userId: string; missionId: string; stepId: string; leaseSeconds?: number },
+) {
+  const { data, error } = await supabase.rpc("ashqe_heartbeat_mission_step", {
+    p_user_id: input.userId,
+    p_mission_id: input.missionId,
+    p_step_id: input.stepId,
+    p_lease_seconds: input.leaseSeconds ?? 120,
+  })
+  if (error) throw new Error("mission_step_heartbeat_failed")
+  if (!data) throw new Error("mission_step_lease_expired")
+  return true
 }
 
 export async function completeMissionStep(
