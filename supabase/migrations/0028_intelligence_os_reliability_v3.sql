@@ -118,6 +118,8 @@ declare
   v_decision public.ashqe_decisions%rowtype;
   v_opportunity public.ashqe_opportunities%rowtype;
   v_mission public.ashqe_missions%rowtype;
+  v_existing_mission_id uuid;
+  v_existing_mission_status text;
 begin
   if not exists (select 1 from auth.users where id = p_user_id) then
     raise exception 'decision_owner_mismatch';
@@ -130,14 +132,14 @@ begin
 
   if not found then raise exception 'decision_not_found'; end if;
   if v_decision.status <> 'candidate' then
-    select id,status,selected_action into v_mission
+    select id,status into v_existing_mission_id, v_existing_mission_status
     from public.ashqe_missions
     where decision_id = p_decision_id
       and user_id = p_user_id
       and status not in ('completed','cancelled','escalated','failed')
     order by created_at desc limit 1;
     if found then
-      mission_id := v_mission.id; reused := true; action := v_decision.selected_action; return next; return;
+      mission_id := v_existing_mission_id; reused := true; action := v_decision.selected_action; return next; return;
     end if;
     raise exception 'decision_not_approvable';
   end if;
