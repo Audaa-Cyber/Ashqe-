@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { buildOpportunityFingerprint, rankDecisionCandidates, scoreDecision, freshnessScore, type DecisionAction } from "./ledger"
+import { buildOpportunityFingerprint, rankDecisionCandidates, scoreDecision, freshnessScore, evidenceDiversityScore, type DecisionAction } from "./ledger"
 import { buildOpportunities } from "@/lib/x/opportunity-engine"
 import { fetchRecentTweets, getValidAccessToken, type XTweet } from "@/lib/x/api"
 import { updateRelationship } from "./relationship-os"
@@ -166,6 +166,9 @@ export async function runIntelligenceCycle(supabase: SupabaseClient, userId: str
         risk: action === "post" || action === "reply" ? .6 : .2,
         uncertainty: 1 - finite01(opportunity.confidence),
         duplicatePenalty: 0,
+        evidenceDiversity: evidenceDiversityScore(opportunity.evidence),
+        outcomeReliability: learning.get(action) ?? .5,
+        authorityFit: action === "post" || action === "reply" ? .75 : 1,
         score: 0,
       })).map(c => ({...c,score:scoreDecision(c)}))
 
