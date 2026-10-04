@@ -57,8 +57,8 @@ export async function recordLearningCandidate(
       observation: input.observation,
       evidence: (input.evidenceIds ?? []).map((id) => ({ id })),
       supporting_outcomes: (input.outcomeIds ?? []).map((id) => ({ id })),
-      confidence: input.confidence,
-      sample_size: input.sampleSize,
+      confidence: clamp01(input.confidence),
+      sample_size: Math.max(0, Math.floor(input.sampleSize)),
       status: "candidate",
     })
     .select("id")
