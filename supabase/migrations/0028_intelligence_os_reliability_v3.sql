@@ -41,7 +41,7 @@ begin
   if auth.role() <> 'service_role' and auth.uid() is distinct from p_user_id then
     raise exception 'intelligence_cycle_owner_mismatch';
   end if;
-  if not exists (select 1 from public.ashqe_execution_policy where user_id = p_user_id) then
+  if not exists (select 1 from auth.users where id = p_user_id) then
     raise exception 'intelligence_cycle_user_not_found';
   end if;
   if p_lease_seconds < 30 or p_lease_seconds > 900 then
