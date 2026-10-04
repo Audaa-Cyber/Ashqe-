@@ -16,7 +16,7 @@ export async function POST(request:Request){
   if(!body.userId || !body.actionType || !body.instruction) return NextResponse.json({error:"user_id_action_type_instruction_required"},{status:400})
 
   const admin=createAdminClient()
-  const authz=await authorizeAutonomousAction(admin,body.userId,body.actionType,{targetId:body.targetId,recipientOptedIn:body.recipientOptedIn,aiReplyApproved:body.aiReplyApproved})
+  const authz=await authorizeAutonomousAction(admin,body.userId,body.actionType,{targetId:body.targetId ?? undefined,recipientOptedIn:body.recipientOptedIn ?? false,aiReplyApproved:body.aiReplyApproved ?? false})
   if(!authz.allowed) return NextResponse.json({executed:false,blocked:true,reason:authz.reason})
 
   const conn=await getValidAccessToken(admin,body.userId)
