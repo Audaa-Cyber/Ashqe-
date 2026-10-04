@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const decisionId = typeof body.decisionId === "string" ? body.decisionId : ""
     if (!decisionId) return NextResponse.json({ error: "decisionId_required" }, { status: 400 })
     try {
-      const result = await approveDecisionAndCreateMission(supabase, { userId: user.id, decisionId })
+      const result = await approveDecisionAndCreateMission(supabase, { userId: user.id, decisionId, aiReplyApproved: body.aiReplyApproved === true })
       return NextResponse.json(result, { status: result.reused ? 200 : 201 })
     } catch (error) {
       return NextResponse.json({ error: error instanceof Error ? error.message : "decision_approval_failed" }, { status: 409 })
