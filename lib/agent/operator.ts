@@ -4,6 +4,7 @@ import type { AgentHandler } from "./graph/workflow"
 import { isOperatorAction, validateOperatorAction } from "./contracts"
 import { assertAgentActionReservation, settleAgentReservation } from "./persistence"
 import { finalizeVerifiedXAction } from "./verification"
+import { validateVoice } from "../intelligence/voice-validator"
 
 function requiredText(taskInput: Record<string, unknown>) {
   const text = typeof taskInput.text === "string" ? taskInput.text.trim() : ""
@@ -31,6 +32,8 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
 
     const text = requiredText(task.input)
     const targetId = task.resource?.targetId
+    const voice = await validateVoice(supabase, { userId: task.userId, text, evidence: typeof task.input.targetText === "string" ? [{ claim: task.input.targetText, source: targetId }] : [] })
+    if (voice.status !== "pass") throw new Error(voice.status === "block" ? "voice_validation_blocked" : "voice_validation_requires_review")
 
     const connection = await getValidAccessToken(supabase, task.userId)
     if (!connection) throw new Error("x_not_connected")
