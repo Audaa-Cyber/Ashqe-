@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { claimNextMissionStep, transitionMission, failMissionWithRecovery, completeMissionStep, waitForMissionApproval } from "@/lib/intelligence/mission-runtime"
+import { transitionMission, failMissionWithRecovery, completeMissionStep, waitForMissionApproval } from "@/lib/intelligence/mission-runtime"
 import { executeMissionStep } from "@/lib/intelligence/mission-executor"
 import { approveDecisionAndCreateMission } from "@/lib/intelligence/decision-mission"
 
@@ -34,8 +34,9 @@ export async function POST(request: Request) {
 
   try {
     if (operation === "start") {
-      if (mission.status !== "planned" && mission.status !== "ready") return NextResponse.json({ error: "mission_not_startable", status: mission.status }, { status: 409 })
-      const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "ready", checkpoint: mission.checkpoint ?? {} })
+      if (mission.status === "ready") return NextResponse.json({ mission, alreadyReady: true })
+      if (mission.status !== "planned") return NextResponse.json({ error: "mission_not_startable", status: mission.status }, { status: 409 })
+      const next = await transitionMission(supabase, { userId: user.id, missionId, from: "planned", to: "ready", checkpoint: mission.checkpoint ?? {} })
       return NextResponse.json({ mission: next })
     }
 
@@ -47,9 +48,8 @@ export async function POST(request: Request) {
 
     if (operation === "run_step") {
       const position = Number.isInteger(body.position) ? body.position : Number(mission.current_step ?? 0)
-      const step = await claimNextMissionStep(supabase, { userId: user.id, missionId, position })
-      const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "running", checkpoint: { ...(mission.checkpoint ?? {}), claimedStepId: step.id } })
-      return NextResponse.json({ mission: next, step })
+      const result = await executeMissionStep(supabase, { userId: user.id, missionId, position })
+      return NextResponse.json(result)
     }
 
     if (operation === "complete_step") {
