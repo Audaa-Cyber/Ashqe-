@@ -69,6 +69,7 @@ export async function approveDecisionAndCreateMission(
     actionType: action === "post" ? "post" : action === "reply" || action === "follow_up" ? "reply" : undefined,
     text: draftText || undefined,
     targetId: typeof metadata.targetId === "string" ? metadata.targetId : undefined,
+    targetText: typeof metadata.targetText === "string" ? metadata.targetText : undefined,
     recipientOptedIn: metadata.recipientOptedIn === true,
     aiReplyApproved,
     risk: WRITE_ACTIONS.has(action) ? "high" : "low",
