@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { claimNextMissionStep, transitionMission, failMissionWithRecovery, completeMissionStep, waitForMissionApproval } from "@/lib/intelligence/mission-runtime"
+import { executeMissionStep } from "@/lib/intelligence/mission-executor"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -27,6 +28,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ mission: next })
     }
 
+    if (operation === "execute_step") {
+      const position = Number.isInteger(body.position) ? body.position : Number(mission.current_step ?? 0)
+      const result = await executeMissionStep(supabase, { userId: user.id, missionId, position })
+      return NextResponse.json(result)
+    }
+
     if (operation === "run_step") {
       const position = Number.isInteger(body.position) ? body.position : Number(mission.current_step ?? 0)
       const step = await claimNextMissionStep(supabase, { userId: user.id, missionId, position })
@@ -51,7 +58,7 @@ export async function POST(request: Request) {
 
     if (operation === "pause") {
       if (mission.status === "completed" || mission.status === "cancelled") return NextResponse.json({ error: "mission_terminal" }, { status: 409 })
-      const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "diagnosing", checkpoint: { ...(mission.checkpoint ?? {}), pausedAt: new Date().toISOString() } })
+      const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "paused", checkpoint: { ...(mission.checkpoint ?? {}), pausedAt: new Date().toISOString() } })
       return NextResponse.json({ mission: next })
     }
 
@@ -67,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     if (operation === "resume") {
-      if (!["recovering", "waiting_approval", "ready"].includes(mission.status)) return NextResponse.json({ error: "mission_not_resumable", status: mission.status }, { status: 409 })
+      if (!["recovering", "waiting_approval", "ready", "paused"].includes(mission.status)) return NextResponse.json({ error: "mission_not_resumable", status: mission.status }, { status: 409 })
       const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "running", checkpoint: { ...(mission.checkpoint ?? {}), resumedAt: new Date().toISOString() } })
       return NextResponse.json({ mission: next })
     }
