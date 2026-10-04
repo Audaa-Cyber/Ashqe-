@@ -56,6 +56,7 @@ function actionInput(step: StepRow) {
       recipientOptedIn: input.recipientOptedIn === true,
       aiReplyApproved: input.aiReplyApproved === true,
       timezone: typeof input.timezone === "string" ? input.timezone : undefined,
+      targetText: typeof input.targetText === "string" ? input.targetText : undefined,
     }
   }
   return input
