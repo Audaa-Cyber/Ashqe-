@@ -19,7 +19,7 @@ export async function POST(request:Request){
   const admin=createAdminClient()
   const authz=await authorizeAutonomousAction(admin,body.userId,body.actionType,{targetId:body.targetId ?? undefined,recipientOptedIn:body.recipientOptedIn ?? false,aiReplyApproved:body.aiReplyApproved ?? false})
   if(!authz.allowed) return NextResponse.json({executed:false,blocked:true,reason:authz.reason})
-  const reservationId = reservationId
+  const reservationId = authz.reservationId
   if (!reservationId) return NextResponse.json({executed:false,blocked:true,reason:"action_reservation_missing"},{status:409})
 
   const conn=await getValidAccessToken(admin,body.userId)
