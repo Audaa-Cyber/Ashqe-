@@ -117,9 +117,11 @@ export async function runIntelligenceCycle(supabase: SupabaseClient, userId: str
     const opportunities = buildOpportunities((signals??[]) as never[],tweets,25)
     const persisted: Array<Record<string,unknown>> = []
 
+    const relationshipSubjects = new Set<string>()
     for (const opportunity of opportunities) {
       for (const evidence of opportunity.evidence) {
-        if (!evidence.authorId) continue
+        if (!evidence.authorId || relationshipSubjects.has(evidence.authorId)) continue
+        relationshipSubjects.add(evidence.authorId)
         try {
           await updateRelationship(supabase, userId, {
             subjectId: evidence.authorId,
