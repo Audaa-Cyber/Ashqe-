@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     }
 
     if (operation === "resume") {
-      if (!["recovering", "waiting_approval", "ready", "paused"].includes(mission.status)) return NextResponse.json({ error: "mission_not_resumable", status: mission.status }, { status: 409 })
+      if (!["recovering", "ready", "paused"].includes(mission.status)) return NextResponse.json({ error: "mission_not_resumable", status: mission.status }, { status: 409 })
       const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "running", checkpoint: { ...(mission.checkpoint ?? {}), resumedAt: new Date().toISOString() } })
       return NextResponse.json({ mission: next })
     }
