@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getValidAccessToken, postReply, postTweet } from "../x/api"
 import type { AgentHandler } from "./graph/workflow"
 import { isOperatorAction, validateOperatorAction } from "./contracts"
-import { assertAgentActionReservation } from "./persistence"
+import { assertAgentActionReservation, settleAgentReservation } from "./persistence"
+import { finalizeVerifiedXAction } from "./verification"
 
 function requiredText(taskInput: Record<string, unknown>) {
   const text = typeof taskInput.text === "string" ? taskInput.text.trim() : ""
@@ -41,27 +42,25 @@ export function createOperatorHandler(supabase: SupabaseClient): AgentHandler {
       // X request so a reservation cannot expire during token lookup.
       await assertAgentActionReservation(supabase, task, actionType)
       const posted = await postReply(connection.access_token, text, targetId)
-      return {
-        taskId: task.id,
-        agent: task.target,
-        status: "completed",
-        output: { actionType, id: posted.id, text: posted.text },
-        risk: task.risk,
-        createdAt: Date.now(),
+      const result = { taskId: task.id, agent: task.target, status: "completed" as const, output: { actionType, id: posted.id, text: posted.text }, risk: task.risk, createdAt: Date.now() }
+      const verification = await finalizeVerifiedXAction(supabase, task, result)
+      if (!verification.verified) {
+        await settleAgentReservation(supabase, task, "released")
+        return { ...result, status: "failed" as const, reason: "x_write_verification_failed" }
       }
+      return result
     }
 
     // Keep the final authorization check immediately adjacent to the external
     // X request so a reservation cannot expire during token lookup.
     await assertAgentActionReservation(supabase, task, actionType)
     const posted = await postTweet(connection.access_token, text)
-    return {
-      taskId: task.id,
-      agent: task.target,
-      status: "completed",
-      output: { actionType, id: posted.id, text: posted.text },
-      risk: task.risk,
-      createdAt: Date.now(),
+    const result = { taskId: task.id, agent: task.target, status: "completed" as const, output: { actionType, id: posted.id, text: posted.text }, risk: task.risk, createdAt: Date.now() }
+    const verification = await finalizeVerifiedXAction(supabase, task, result)
+    if (!verification.verified) {
+      await settleAgentReservation(supabase, task, "released")
+      return { ...result, status: "failed" as const, reason: "x_write_verification_failed" }
     }
+    return result
   }
 }
