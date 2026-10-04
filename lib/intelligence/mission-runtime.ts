@@ -60,17 +60,25 @@ export async function failMissionWithRecovery(
   input: { userId: string; missionId: string; reason: string },
 ) {
   const plan = buildRecoveryPlan(input.reason)
+  const { data: current } = await supabase
+    .from("ashqe_missions")
+    .select("checkpoint")
+    .eq("id", input.missionId)
+    .eq("user_id", input.userId)
+    .maybeSingle()
+  const checkpoint = {
+    ...((current?.checkpoint && typeof current.checkpoint === "object") ? current.checkpoint as Record<string, unknown> : {}),
+    failureReason: input.reason,
+    diagnosedAt: new Date().toISOString(),
+  }
+
   const { data, error } = await supabase
     .from("ashqe_missions")
     .update({
       status: "diagnosing",
       failure_class: plan.classification.type,
       recovery_strategy: plan.next,
-      checkpoint: {
-        ...(await supabase.from("ashqe_missions").select("checkpoint").eq("id", input.missionId).eq("user_id", input.userId).maybeSingle()).data?.checkpoint,
-        failureReason: input.reason,
-        diagnosedAt: new Date().toISOString(),
-      },
+      checkpoint,
     })
     .eq("id", input.missionId)
     .eq("user_id", input.userId)
