@@ -170,7 +170,7 @@ export async function runIntelligenceCycle(supabase: SupabaseClient, userId: str
         risk: action === "post" || action === "reply" ? .6 : .2,
         uncertainty: 1 - finite01(opportunity.confidence),
         duplicatePenalty: 0,
-        evidenceDiversity: evidenceDiversityScore(opportunity.evidence),
+        evidenceDiversity: evidenceDiversityScore(opportunity.evidence.map(e => ({ source: "x", authorId: e.authorId ?? undefined }))),
         outcomeReliability: learning.get(action) ?? .5,
         authorityFit: action === "post" || action === "reply" ? .75 : 1,
         score: 0,
