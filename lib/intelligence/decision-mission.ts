@@ -13,7 +13,7 @@ const WRITE_ACTIONS = new Set(["post", "reply", "follow_up"])
 
 export async function approveDecisionAndCreateMission(
   supabase: SupabaseClient,
-  input: { userId: string; decisionId: string },
+  input: { userId: string; decisionId: string; aiReplyApproved?: boolean },
 ) {
   const { data: decision, error: decisionError } = await supabase
     .from("ashqe_decisions")
@@ -43,58 +43,63 @@ export async function approveDecisionAndCreateMission(
 
   if (!opportunity) throw new Error("decision_opportunity_not_found")
 
-  // Approval is explicit and does not widen the action scope. Writes still pass
-  // the independent execution policy + reservation gate at runtime.
   const authorityCeiling = [...required]
-  const draftText = typeof opportunity.metadata?.draftText === "string" ? opportunity.metadata.draftText.trim() : ""
-  if (WRITE_ACTIONS.has(action) && !draftText) throw new Error("write_mission_requires_explicit_draft_text")
+  const metadata = opportunity.metadata && typeof opportunity.metadata === "object"
+    ? opportunity.metadata as Record<string, unknown>
+    : {}
+  const draftText = typeof metadata.draftText === "string" ? metadata.draftText.trim() : ""
+
+  if (WRITE_ACTIONS.has(action) && !draftText) {
+    throw new Error("write_mission_requires_explicit_draft_text")
+  }
+
+  // Decision approval and AI-reply approval are intentionally separate controls.
+  // This prevents approving a strategic decision from silently granting permission
+  // to generate/send an external reply.
+  const aiReplyApproved = input.aiReplyApproved === true
+
   const stepInput: Record<string, unknown> = {
-    agent: WRITE_ACTIONS.has(action) ? "operator" : action === "research" ? "research" : action === "relationship" ? "analytics" : "analytics",
+    agent: WRITE_ACTIONS.has(action)
+      ? "operator"
+      : action === "research"
+        ? "research"
+        : action === "relationship"
+          ? "analytics"
+          : "analytics",
     actionType: action === "post" ? "post" : action === "reply" || action === "follow_up" ? "reply" : undefined,
     text: draftText || undefined,
-    targetId: typeof opportunity.metadata?.targetId === "string" ? opportunity.metadata.targetId : undefined,
-    recipientOptedIn: opportunity.metadata?.recipientOptedIn === true,
-    aiReplyApproved: action === "reply" || action === "follow_up",
+    targetId: typeof metadata.targetId === "string" ? metadata.targetId : undefined,
+    recipientOptedIn: metadata.recipientOptedIn === true,
+    aiReplyApproved,
     risk: WRITE_ACTIONS.has(action) ? "high" : "low",
     opportunityId: opportunity.id,
   }
 
-  const { data: mission, error: missionError } = await supabase
-    .from("ashqe_missions")
-    .insert({
-      user_id: input.userId,
-      objective: opportunity.title,
-      status: "planned",
-      authority_ceiling: authorityCeiling,
-      current_step: 0,
-      decision_id: decision.id,
-      checkpoint: { approvedAt: new Date().toISOString(), decisionId: decision.id },
-      expires_at: opportunity.expires_at ?? null,
-    })
-    .select("id,status,current_step,authority_ceiling,decision_id,checkpoint")
-    .single()
-  if (missionError || !mission) throw new Error("mission_create_failed")
-
-  const { error: stepError } = await supabase.from("ashqe_mission_steps").insert({
-    mission_id: mission.id,
-    position: 0,
-    objective: opportunity.title,
-    status: "ready",
-    required_capabilities: required,
-    input: stepInput,
+  const { data: converted, error: conversionError } = await supabase.rpc("ashqe_approve_decision_create_mission", {
+    p_user_id: input.userId,
+    p_decision_id: decision.id,
+    p_authority_ceiling: authorityCeiling,
+    p_step_input: stepInput,
+    p_expires_at: opportunity.expires_at ?? null,
   })
-  if (stepError) {
-    await supabase.from("ashqe_missions").delete().eq("id", mission.id).eq("user_id", input.userId)
-    throw new Error("mission_step_create_failed")
+
+  if (conversionError) {
+    const message = conversionError.message ?? ""
+    if (message.includes("decision_not_found")) throw new Error("decision_not_found")
+    if (message.includes("decision_not_approvable")) throw new Error("decision_not_approvable")
+    if (message.includes("decision_opportunity_not_found")) throw new Error("decision_opportunity_not_found")
+    throw new Error("decision_mission_conversion_failed")
   }
 
-  const { error: decisionUpdateError } = await supabase.from("ashqe_decisions")
-    .update({ status: "approved", mission_id: mission.id })
-    .eq("id", decision.id).eq("user_id", input.userId).eq("status", "candidate")
-  if (decisionUpdateError) throw new Error("decision_approval_failed")
+  const row = Array.isArray(converted) ? converted[0] : converted
+  if (!row?.mission_id) throw new Error("decision_mission_conversion_failed")
 
-  await supabase.from("ashqe_opportunities").update({ status: "acted" }).eq("id", opportunity.id).eq("user_id", input.userId)
-  await supabase.from("ashqe_opportunity_state").update({ state: "converted" }).eq("user_id", input.userId).eq("fingerprint", opportunity.fingerprint)
-
-  return { missionId: mission.id, decisionId: decision.id, action, authorityCeiling }
+  return {
+    missionId: String(row.mission_id),
+    decisionId: decision.id,
+    action,
+    authorityCeiling,
+    reused: Boolean(row.reused),
+    aiReplyApproved,
+  }
 }
