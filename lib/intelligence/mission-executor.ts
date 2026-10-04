@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { generateText } from "ai"
 import { getChatModel } from "@/lib/openrouter"
 import { fetchRecentTweets, getValidAccessToken } from "@/lib/x/api"
-import { AgentRuntime, type AgentHandlerMap } from "@/lib/agent"
+import { AgentRuntime, type AgentHandlerMap, type AgentResult } from "@/lib/agent"
 import { createAgentTask } from "@/lib/agent/orchestrator"
 import { getAgentDefinition } from "@/lib/agent/registry"
 import { claimNextMissionStep, completeMissionStep, failMissionWithRecovery, transitionMission, heartbeatMissionStep } from "./mission-runtime"
@@ -160,7 +160,7 @@ export async function executeMissionStep(supabase: SupabaseClient, input: {
   })
 
   const heartbeat = setInterval(() => { void heartbeatMissionStep(supabase, { userId: input.userId, missionId: mission.id, stepId: claimed.id, leaseSeconds: 120 }).catch(() => undefined) }, 45_000)
-  let result
+  let result: AgentResult
   try {
     result = await runtime.dispatch(task)
   } finally {
