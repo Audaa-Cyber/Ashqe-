@@ -66,7 +66,11 @@ export async function failMissionWithRecovery(
       status: "diagnosing",
       failure_class: plan.classification.type,
       recovery_strategy: plan.next,
-      checkpoint: { failureReason: input.reason, diagnosedAt: new Date().toISOString() },
+      checkpoint: {
+        ...(await supabase.from("ashqe_missions").select("checkpoint").eq("id", input.missionId).eq("user_id", input.userId).maybeSingle()).data?.checkpoint,
+        failureReason: input.reason,
+        diagnosedAt: new Date().toISOString(),
+      },
     })
     .eq("id", input.missionId)
     .eq("user_id", input.userId)
