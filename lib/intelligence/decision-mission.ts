@@ -46,9 +46,12 @@ export async function approveDecisionAndCreateMission(
   // Approval is explicit and does not widen the action scope. Writes still pass
   // the independent execution policy + reservation gate at runtime.
   const authorityCeiling = [...required]
+  const draftText = typeof opportunity.metadata?.draftText === "string" ? opportunity.metadata.draftText.trim() : ""
+  if (WRITE_ACTIONS.has(action) && !draftText) throw new Error("write_mission_requires_explicit_draft_text")
   const stepInput: Record<string, unknown> = {
     agent: WRITE_ACTIONS.has(action) ? "operator" : action === "research" ? "research" : action === "relationship" ? "analytics" : "analytics",
     actionType: action === "post" ? "post" : action === "reply" || action === "follow_up" ? "reply" : undefined,
+    text: draftText || undefined,
     targetId: typeof opportunity.metadata?.targetId === "string" ? opportunity.metadata.targetId : undefined,
     recipientOptedIn: opportunity.metadata?.recipientOptedIn === true,
     aiReplyApproved: action === "reply" || action === "follow_up",
