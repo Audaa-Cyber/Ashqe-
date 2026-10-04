@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { claimNextMissionStep, transitionMission } from "@/lib/intelligence/mission-runtime"
+import { claimNextMissionStep, transitionMission, failMissionWithRecovery } from "@/lib/intelligence/mission-runtime"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -37,6 +37,12 @@ export async function POST(request: Request) {
     if (operation === "pause") {
       if (mission.status === "completed" || mission.status === "cancelled") return NextResponse.json({ error: "mission_terminal" }, { status: 409 })
       const next = await transitionMission(supabase, { userId: user.id, missionId, from: mission.status, to: "diagnosing", checkpoint: { ...(mission.checkpoint ?? {}), pausedAt: new Date().toISOString() } })
+      return NextResponse.json({ mission: next })
+    }
+
+    if (operation === "fail") {
+      const reason = typeof body.reason === "string" ? body.reason.slice(0, 1000) : "mission_failed"
+      const next = await failMissionWithRecovery(supabase, { userId: user.id, missionId, reason })
       return NextResponse.json({ mission: next })
     }
 
