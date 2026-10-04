@@ -150,7 +150,7 @@ export async function postTweet(accessToken: string, text: string): Promise<{ id
 
 
 export async function postReply(accessToken: string, text: string, inReplyToId: string): Promise<{ id: string; text: string }> {
-  const res = await fetch("https://api.twitter.com/2/tweets", {
+  const res = await fetch("https://api.x.com/2/tweets", {
     method: "POST",
     headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
     body: JSON.stringify({ text, reply: { in_reply_to_tweet_id: inReplyToId } }),
