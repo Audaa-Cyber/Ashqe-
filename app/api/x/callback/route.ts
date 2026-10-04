@@ -5,7 +5,217 @@ import { fetchXMe } from "@/lib/x/api"
 import { exchangeCodeForToken } from "@/lib/x/oauth"
 import { type NextRequest, NextResponse } from "next/server"
 import { encryptToken } from "@/lib/security/tokens"
-export const maxDuration=60
-export const dynamic="force-dynamic"
-function errRedirect(request:NextRequest,msg:string){console.error("[x-oauth] "+msg);const url=new URL("/connect",request.url);url.searchParams.set("error",msg);return NextResponse.redirect(url)}
-export async function GET(request:NextRequest){const supabase=await createClient();const params=request.nextUrl.searchParams;const code=params.get("code");const stateParam=params.get("state");const errorParam=params.get("error");if(errorParam)return errRedirect(request,errorParam);if(!code||!stateParam)return errRedirect(request,"missing_code_or_state");const stateCookie=request.cookies.get("x_oauth_state")?.value;const verifier=request.cookies.get("x_oauth_verifier")?.value;const redirectUri=request.cookies.get("x_oauth_redirect_uri")?.value;if(!stateCookie||!verifier||!redirectUri)return errRedirect(request,"missing_oauth_cookies");if(stateCookie!==stateParam)return errRedirect(request,"state_mismatch");const clientId=process.env.X_CLIENT_ID;if(!clientId)return errRedirect(request,"missing_x_client_id");let tokens;try{tokens=await exchangeCodeForToken({clientId,clientSecret:process.env.X_CLIENT_SECRET,code,redirectUri,codeVerifier:verifier})}catch(error){console.error("[x-oauth] token exchange failed",error);return errRedirect(request,"token_exchange_failed")}let me;try{me=await fetchXMe(tokens.access_token)}catch(error){console.error("[x-oauth] users/me failed",error);return errRedirect(request,"users_me_failed")}const expiresAt=new Date(Date.now()+(tokens.expires_in??7200)*1000).toISOString();const {data:authData}=await supabase.auth.getUser();let userId=authData.user?.id;if(!userId){try{const admin=createAdminClient();const email="x_"+me.id+"@auth.ashqe.local";const password=randomBytes(48).toString("base64url");const {data:existingConnection}=await admin.from("x_connections").select("user_id").eq("x_user_id",me.id).maybeSingle();if(existingConnection?.user_id){const existingUserId=existingConnection.user_id;userId=existingUserId;const {error}=await admin.auth.admin.updateUserById(existingUserId,{password,email_confirm:true,user_metadata:{x_username:me.username,x_user_id:me.id,x_authenticated:true}});if(error)throw error}else{const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{x_username:me.username,x_user_id:me.id,x_authenticated:true}});if(error||!data.user)throw error??new Error("user_creation_failed");userId=data.user.id}const {data:signInData,error:signInError}=await supabase.auth.signInWithPassword({email,password});if(signInError||!signInData.session)throw signInError??new Error("session_creation_failed")}catch(error){console.error("[x-oauth] Supabase X session creation failed",error);return errRedirect(request,"supabase_session_failed")}}if(!userId)return errRedirect(request,"missing_user_id");const resolvedUserId=userId;const admin=createAdminClient();const connectionPayload={user_id:resolvedUserId,x_user_id:me.id,x_username:me.username,x_name:me.name??null,x_avatar_url:me.profile_image_url??null,access_token:encryptToken(tokens.access_token as string),refresh_token:tokens.refresh_token?encryptToken(tokens.refresh_token):null,expires_at:expiresAt,scope:tokens.scope??null,updated_at:new Date().toISOString()};const {data:existingUserConnection,error:lookupError}=await admin.from("x_connections").select("user_id").eq("user_id",resolvedUserId).maybeSingle();if(lookupError)return errRedirect(request,"db_connection_lookup_failed");const {error:connectionWriteError}=existingUserConnection?await admin.from("x_connections").update(connectionPayload).eq("user_id",resolvedUserId):await admin.from("x_connections").insert(connectionPayload);if(connectionWriteError)return errRedirect(request,"db_upsert_failed");try{const recentPosts=await (await import("@/lib/x/api")).fetchRecentTweets(tokens.access_token,me.id,100);await admin.from("x_connections").update({recent_posts:recentPosts.map((tweet)=>({id:tweet.id,text:tweet.text,created_at:tweet.created_at??null,public_metrics:tweet.public_metrics??null})),updated_at:new Date().toISOString()}).eq("user_id",resolvedUserId)}catch(error){console.error("[x-oauth] initial X timeline sync failed",error)}const {data:onboardingDone}=await admin.from("ashqe_memories").select("id").eq("user_id",resolvedUserId).eq("title","Onboarding completed").limit(1).maybeSingle();const destination=onboardingDone?"/dashboard":"/onboarding";const res=NextResponse.redirect(new URL(destination,request.url));for(const name of ["x_oauth_state","x_oauth_verifier","x_oauth_redirect_uri"])res.cookies.set(name,"",{path:"/",maxAge:0});return res}
+
+export const maxDuration = 60
+export const dynamic = "force-dynamic"
+
+function errRedirect(request: NextRequest, msg: string) {
+  console.error("[x-oauth] " + msg)
+  const url = new URL("/connect", request.url)
+  url.searchParams.set("error", msg)
+  return NextResponse.redirect(url)
+}
+
+async function establishSupabaseSession(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  xUserId: string,
+  xUsername: string,
+) {
+  // X is the identity provider for the first-time connection. Prefer an
+  // anonymous Supabase identity so the callback does not depend on the
+  // password/email auth provider being enabled.
+  const anonymous = await supabase.auth.signInAnonymously({
+    options: {
+      data: {
+        x_user_id: xUserId,
+        x_username: xUsername,
+        x_authenticated: true,
+      },
+    },
+  })
+
+  if (!anonymous.error && anonymous.data.user && anonymous.data.session) {
+    return { userId: anonymous.data.user.id }
+  }
+
+  // Backward-compatible fallback for projects where anonymous auth is
+  // disabled. Existing X identities are upgraded to a durable password
+  // session so the browser still receives a normal Supabase session.
+  const admin = createAdminClient()
+  const email = "x_" + xUserId + "@auth.ashqe.local"
+  const password = randomBytes(48).toString("base64url")
+
+  const { data: existingConnection, error: connectionLookupError } = await admin
+    .from("x_connections")
+    .select("user_id")
+    .eq("x_user_id", xUserId)
+    .maybeSingle()
+
+  if (connectionLookupError) throw connectionLookupError
+
+  let userId: string
+
+  if (existingConnection?.user_id) {
+    userId = existingConnection.user_id
+    const { error } = await admin.auth.admin.updateUserById(userId, {
+      password,
+      email_confirm: true,
+      user_metadata: {
+        x_username: xUsername,
+        x_user_id: xUserId,
+        x_authenticated: true,
+      },
+    })
+    if (error) throw error
+  } else {
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        x_username: xUsername,
+        x_user_id: xUserId,
+        x_authenticated: true,
+      },
+    })
+    if (error || !data.user) throw error ?? new Error("user_creation_failed")
+    userId = data.user.id
+  }
+
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (signInError || !signInData.user || !signInData.session) {
+    throw signInError ?? new Error("session_creation_failed")
+  }
+
+  return { userId: signInData.user.id }
+}
+
+export async function GET(request: NextRequest) {
+  const supabase = await createClient()
+  const params = request.nextUrl.searchParams
+  const code = params.get("code")
+  const stateParam = params.get("state")
+  const errorParam = params.get("error")
+
+  if (errorParam) return errRedirect(request, errorParam)
+  if (!code || !stateParam) return errRedirect(request, "missing_code_or_state")
+
+  const stateCookie = request.cookies.get("x_oauth_state")?.value
+  const verifier = request.cookies.get("x_oauth_verifier")?.value
+  const redirectUri = request.cookies.get("x_oauth_redirect_uri")?.value
+
+  if (!stateCookie || !verifier || !redirectUri) {
+    return errRedirect(request, "missing_oauth_cookies")
+  }
+
+  if (stateCookie !== stateParam) return errRedirect(request, "state_mismatch")
+
+  const clientId = process.env.X_CLIENT_ID
+  if (!clientId) return errRedirect(request, "missing_x_client_id")
+
+  let tokens
+  try {
+    tokens = await exchangeCodeForToken({
+      clientId,
+      clientSecret: process.env.X_CLIENT_SECRET,
+      code,
+      redirectUri,
+      codeVerifier: verifier,
+    })
+  } catch (error) {
+    console.error("[x-oauth] token exchange failed", error)
+    return errRedirect(request, "token_exchange_failed")
+  }
+
+  let me
+  try {
+    me = await fetchXMe(tokens.access_token)
+  } catch (error) {
+    console.error("[x-oauth] users/me failed", error)
+    return errRedirect(request, "users_me_failed")
+  }
+
+  const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 7200) * 1000).toISOString()
+  const { data: authData } = await supabase.auth.getUser()
+  let userId = authData.user?.id
+
+  if (!userId) {
+    try {
+      const session = await establishSupabaseSession(supabase, me.id, me.username)
+      userId = session.userId
+    } catch (error) {
+      console.error("[x-oauth] Supabase X session creation failed", error)
+      return errRedirect(request, "supabase_session_failed")
+    }
+  }
+
+  if (!userId) return errRedirect(request, "missing_user_id")
+
+  const resolvedUserId = userId
+  const admin = createAdminClient()
+  const connectionPayload = {
+    user_id: resolvedUserId,
+    x_user_id: me.id,
+    x_username: me.username,
+    x_name: me.name ?? null,
+    x_avatar_url: me.profile_image_url ?? null,
+    access_token: encryptToken(tokens.access_token as string),
+    refresh_token: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
+    expires_at: expiresAt,
+    scope: tokens.scope ?? null,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { data: existingUserConnection, error: lookupError } = await admin
+    .from("x_connections")
+    .select("user_id")
+    .eq("user_id", resolvedUserId)
+    .maybeSingle()
+
+  if (lookupError) return errRedirect(request, "db_connection_lookup_failed")
+
+  const { error: connectionWriteError } = existingUserConnection
+    ? await admin.from("x_connections").update(connectionPayload).eq("user_id", resolvedUserId)
+    : await admin.from("x_connections").insert(connectionPayload)
+
+  if (connectionWriteError) return errRedirect(request, "db_upsert_failed")
+
+  try {
+    const recentPosts = await (await import("@/lib/x/api")).fetchRecentTweets(tokens.access_token, me.id, 100)
+    await admin
+      .from("x_connections")
+      .update({
+        recent_posts: recentPosts.map((tweet) => ({
+          id: tweet.id,
+          text: tweet.text,
+          created_at: tweet.created_at ?? null,
+          public_metrics: tweet.public_metrics ?? null,
+        })),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", resolvedUserId)
+  } catch (error) {
+    console.error("[x-oauth] initial X timeline sync failed", error)
+  }
+
+  const { data: onboardingDone } = await admin
+    .from("ashqe_memories")
+    .select("id")
+    .eq("user_id", resolvedUserId)
+    .eq("title", "Onboarding completed")
+    .limit(1)
+    .maybeSingle()
+
+  const destination = onboardingDone ? "/dashboard" : "/onboarding"
+  const res = NextResponse.redirect(new URL(destination, request.url))
+
+  for (const name of ["x_oauth_state", "x_oauth_verifier", "x_oauth_redirect_uri"]) {
+    res.cookies.set(name, "", { path: "/", maxAge: 0 })
+  }
+
+  return res
+}
