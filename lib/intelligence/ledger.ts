@@ -19,6 +19,9 @@ export type DecisionInputs = {
   risk: number
   uncertainty: number
   duplicatePenalty?: number
+  evidenceDiversity?: number
+  outcomeReliability?: number
+  authorityFit?: number
 }
 
 const clamp = (value: number) => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0))
@@ -38,15 +41,27 @@ export function scoreDecision(input: DecisionInputs) {
     clamp(input.relationshipValue) *
     0.08 +
     clamp(input.historicalSuccess) *
-    0.10
+    0.07 +
+    clamp(input.evidenceDiversity ?? input.evidenceStrength) *
+    0.03 +
+    clamp(input.outcomeReliability ?? input.historicalSuccess) *
+    0.03
 
   const negative =
     clamp(input.executionCost) * 0.07 +
     clamp(input.risk) * 0.12 +
     clamp(input.uncertainty) * 0.08 +
+    (1 - clamp(input.authorityFit ?? 1)) * 0.10 +
     clamp(input.duplicatePenalty ?? 0) * 0.10
 
   return Math.max(0, Math.min(1, positive - negative))
+}
+
+export function evidenceDiversityScore(evidence: Array<{ source?: string; authorId?: string }>) {
+  const sources = new Set(evidence.map(item => item.source).filter(Boolean))
+  const authors = new Set(evidence.map(item => item.authorId).filter(Boolean))
+  if (!evidence.length) return 0
+  return clamp((sources.size * 0.6 + authors.size * 0.4) / Math.max(1, evidence.length))
 }
 
 export function buildOpportunityFingerprint(input: {
