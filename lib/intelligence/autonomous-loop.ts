@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { buildOpportunityFingerprint, rankDecisionCandidates, scoreDecision, freshnessScore, type DecisionAction } from "./ledger"
 import { buildOpportunities } from "@/lib/x/opportunity-engine"
 import { fetchRecentTweets, getValidAccessToken, type XTweet } from "@/lib/x/api"
+import { updateRelationship } from "./relationship-os"
 
 const ACTIONS: DecisionAction[] = ["research","reply","post","follow_up","relationship","monitor"]
 
@@ -115,6 +116,23 @@ export async function runIntelligenceCycle(supabase: SupabaseClient, userId: str
 
     const opportunities = buildOpportunities((signals??[]) as never[],tweets,25)
     const persisted: Array<Record<string,unknown>> = []
+
+    for (const opportunity of opportunities) {
+      for (const evidence of opportunity.evidence) {
+        if (!evidence.authorId) continue
+        try {
+          await updateRelationship(supabase, userId, {
+            subjectId: evidence.authorId,
+            interactionType: opportunity.type === "bd" ? "bd" : opportunity.type === "conversation" ? "conversation" : "content",
+            observedAt: opportunity.metadata.last_seen_at ? String(opportunity.metadata.last_seen_at) : undefined,
+            reach: finite01((evidence.metrics?.impression_count ?? 0) / 100000),
+            relevance: finite01(opportunity.confidence),
+          })
+        } catch {
+          // Relationship enrichment is non-critical to the decision transaction.
+        }
+      }
+    }
     const learning = new Map<DecisionAction, number>()
 
     for (const action of ACTIONS) learning.set(action, await historicalSuccess(supabase, userId, action))
