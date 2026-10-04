@@ -6,6 +6,7 @@ import { getChatModel } from "@/lib/openrouter"
 import { generateText } from "ai"
 import { verifyXWrite, persistVerification } from "@/lib/intelligence/verification"
 import { recordOutcome } from "@/lib/intelligence/outcomes"
+import { validateVoice } from "@/lib/intelligence/voice-validator"
 
 export const maxDuration = 60
 
@@ -28,6 +29,12 @@ export async function POST(request:Request){
   const {text}=await generateText({model:getChatModel(),prompt,temperature:0.8})
   const clean=text.trim().replace(/^["']|["']$/g,"")
   if(!clean || clean.length>280) { await admin.from("ashqe_action_log").update({status:"failed",reason:"generated_content_invalid"}).eq("id",authz.reservationId); return NextResponse.json({error:"generated_content_invalid"},{status:422}) }
+
+  const voice = await validateVoice(admin, { userId: body.userId, text: clean, evidence: body.targetText ? [{ claim: body.targetText, source: body.targetId }] : [] })
+  if (voice.status !== "pass") {
+    await admin.from("ashqe_action_log").update({content:clean,status:"blocked",reason:voice.status === "block" ? "voice_validation_blocked" : "voice_validation_requires_review",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
+    return NextResponse.json({executed:false,blocked:true,reason:voice.status === "block" ? "voice_validation_blocked" : "voice_validation_requires_review",voiceValidationId:voice.id},{status:422})
+  }
 
   try{
     const posted=body.actionType==="reply" ? await postReply(conn.access_token,clean,String(body.targetId)) : await postTweet(conn.access_token,clean)
