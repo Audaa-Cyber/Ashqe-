@@ -120,7 +120,8 @@ export async function executeMissionStep(supabase: SupabaseClient, input: {
   if (step.status !== "ready") throw new Error("mission_step_not_ready")
 
   const target = typeof step.input?.agent === "string" ? step.input.agent : ""
-  const definition = ["orchestrator","research","content","analytics"].includes(target) ? getAgentDefinition(target as never) : null
+  const executableAgents = ["orchestrator","research","content","analytics","operator"] as const
+  const definition = executableAgents.includes(target as (typeof executableAgents)[number]) ? getAgentDefinition(target as never) : null
   if (!definition) throw new Error("mission_agent_not_executable")
 
   const ceiling = capabilities(mission.authority_ceiling)
