@@ -8,7 +8,7 @@
 @layer components{
 .landing-shell{position:relative;isolation:isolate;background-color:var(--background);background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);background-size:32px 32px}
 .ashqe-surface{background:#101216}
-.ashqe-mouse-glow{position:absolute;top:0;left:0;width:30rem;height:30rem;border-radius:9999px;opacity:.26;filter:blur(72px);background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 28%,rgba(255,255,255,.08) 46%,transparent 70%);mix-blend-mode:screen;will-change:transform}
+.ashqe-mouse-glow{display:none!important}
 .ashqe-premium-cursor{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden;mix-blend-mode:screen}
 .ashqe-cursor-dot,.ashqe-cursor-ring{position:fixed;top:0;left:0;border-radius:9999px;will-change:transform}
 .ashqe-cursor-dot{width:5px;height:5px;margin:-2.5px 0 0 -2.5px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.5);opacity:.95;transition:transform .18s cubic-bezier(.22,1,.36,1),opacity .2s ease}
