@@ -148,7 +148,7 @@ begin
   values (
     p_user_id, v_opportunity.title, 'planned', coalesce(p_authority_ceiling,'[]'::jsonb),
     0, v_decision.id,
-    jsonb_build_object('approvedAt', v_now(), 'decisionId', v_decision.id),
+    jsonb_build_object('approvedAt', now(), 'decisionId', v_decision.id),
     coalesce(p_expires_at, v_opportunity.expires_at)
   )
   returning * into v_mission;
@@ -180,8 +180,3 @@ begin
 end;
 $$;
 
-create or replace function public.v_now()
-returns timestamptz
-language sql
-stable
-as $$ select now() $$;
