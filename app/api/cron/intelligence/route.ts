@@ -18,7 +18,11 @@ export async function GET(request:Request){
     .order("created_at",{ascending:false}).limit(1000)
   if(signalError)return NextResponse.json({error:"intelligence_user_scan_failed"},{status:500})
 
-  const users=[...new Set((signals??[]).map(row=>row.user_id).filter((id):id is string=>typeof id==="string"))].slice(0,25)
+  const allUsers=[...new Set((signals??[]).map(row=>row.user_id).filter((id):id is string=>typeof id==="string"))]
+  const rotationOffset=allUsers.length ? Math.floor(Date.now()/300000) % allUsers.length : 0
+  const users=allUsers.length <= 25
+    ? allUsers
+    : Array.from({length:25},(_,index)=>allUsers[(rotationOffset+index)%allUsers.length])
   const intelligence:Array<Record<string,unknown>>=[]
   for(const userId of users){
     try{intelligence.push({userId,status:"ok",cycle:await runIntelligenceCycle(admin,userId)})}
