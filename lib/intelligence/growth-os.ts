@@ -77,14 +77,14 @@ export async function recordExperimentObservation(
   if (!experiment) throw new Error("experiment_not_found")
   if (experiment.status !== "running") throw new Error("experiment_not_running")
 
-  const { data, error } = await supabase.from("ashqe_experiment_observations").insert({
+  const { data, error } = await supabase.from("ashqe_experiment_observations").upsert({
     experiment_id: input.experimentId,
     outcome_id: input.outcomeId ?? null,
     assignment_key: input.assignmentKey,
     variant: input.variant,
     metric_value: Number.isFinite(input.metricValue) ? input.metricValue : 0,
     metadata: input.metadata ?? {},
-  }).select("*").single()
+  }, { onConflict: "experiment_id,assignment_key" }).select("*").single()
   if (error || !data) throw new Error("experiment_observation_failed")
   await supabase.from("ashqe_experiments").update({
     sample_size: await countExperimentObservations(supabase, input.experimentId),
