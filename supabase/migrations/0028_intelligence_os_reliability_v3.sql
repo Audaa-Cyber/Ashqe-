@@ -31,14 +31,15 @@ create or replace function public.ashqe_claim_intelligence_cycle(
 )
 returns uuid
 language plpgsql
-security invoker
-as $$
+security definer
+set search_path = public
+as $
 declare
   v_token uuid := gen_random_uuid();
   v_now timestamptz := now();
 begin
-  if auth.uid() is distinct from p_user_id then
-    raise exception 'intelligence_cycle_owner_mismatch';
+  if not exists (select 1 from public.ashqe_execution_policy where user_id = p_user_id) then
+    raise exception 'intelligence_cycle_user_not_found';
   end if;
   if p_lease_seconds < 30 or p_lease_seconds > 900 then
     raise exception 'invalid_intelligence_cycle_lease';
@@ -72,16 +73,13 @@ create or replace function public.ashqe_release_intelligence_cycle(
 )
 returns boolean
 language plpgsql
-security invoker
-as $$
+security definer
+set search_path = public
+as $
 declare
   v_now timestamptz := now();
   v_count integer;
 begin
-  if auth.uid() is distinct from p_user_id then
-    raise exception 'intelligence_cycle_owner_mismatch';
-  end if;
-
   update public.ashqe_intelligence_cycle_locks
     set lease_expires_at = v_now,
         last_completed_at = case when p_error is null then v_now else last_completed_at end,
@@ -103,14 +101,15 @@ create or replace function public.ashqe_approve_decision_create_mission(
 )
 returns table(mission_id uuid, reused boolean, action text)
 language plpgsql
-security invoker
-as $$
+security definer
+set search_path = public
+as $
 declare
   v_decision public.ashqe_decisions%rowtype;
   v_opportunity public.ashqe_opportunities%rowtype;
   v_mission public.ashqe_missions%rowtype;
 begin
-  if auth.uid() is distinct from p_user_id then
+  if not exists (select 1 from auth.users where id = p_user_id) then
     raise exception 'decision_owner_mismatch';
   end if;
 
@@ -180,3 +179,10 @@ begin
 end;
 $$;
 
+
+revoke all on function public.ashqe_claim_intelligence_cycle(uuid,integer) from public, anon, authenticated;
+revoke all on function public.ashqe_release_intelligence_cycle(uuid,uuid,text) from public, anon, authenticated;
+revoke all on function public.ashqe_approve_decision_create_mission(uuid,uuid,jsonb,jsonb,timestamptz) from public, anon;
+grant execute on function public.ashqe_claim_intelligence_cycle(uuid,integer) to service_role;
+grant execute on function public.ashqe_release_intelligence_cycle(uuid,uuid,text) to service_role;
+grant execute on function public.ashqe_approve_decision_create_mission(uuid,uuid,jsonb,jsonb,timestamptz) to authenticated, service_role;
