@@ -140,3 +140,27 @@ export function freshnessScore(observedAt: string | undefined, halfLifeMs = 6 * 
   if (!Number.isFinite(age)) return 0
   return Math.pow(0.5, age / Math.max(1, halfLifeMs))
 }
+
+export type RecoveryPlan = {
+  classification: ReturnType<typeof classifyFailureForRecovery>
+  next: "retry" | "refresh_evidence" | "reauthorize" | "request_approval" | "replan_without_escalation" | "escalate"
+}
+
+export function buildRecoveryPlan(reason: string): RecoveryPlan {
+  const classification = classifyFailureForRecovery(reason)
+  switch (classification.type) {
+    case "transient":
+    case "rate_limit":
+      return { classification, next: "retry" }
+    case "stale_evidence":
+      return { classification, next: "refresh_evidence" }
+    case "authentication":
+      return { classification, next: "reauthorize" }
+    case "unsafe":
+      return { classification, next: "request_approval" }
+    case "invalid_plan":
+      return { classification, next: "replan_without_escalation" }
+    default:
+      return { classification, next: "escalate" }
+  }
+}
