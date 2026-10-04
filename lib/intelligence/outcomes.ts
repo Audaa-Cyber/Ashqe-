@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type OutcomeState = "unknown" | "observed" | "verified" | "attributed" | "contradicted" | "expired"
 
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0))
+}
+
 export async function recordOutcome(
   supabase: SupabaseClient,
   input: {
@@ -23,8 +27,8 @@ export async function recordOutcome(
       state: input.state,
       metrics: input.metrics ?? {},
       observed_at: input.state === "unknown" ? null : new Date().toISOString(),
-      confidence: input.confidence ?? 0,
-      unknown_reason: input.unknownReason ?? null,
+      confidence: clamp01(input.confidence ?? 0),
+      unknown_reason: input.unknownReason?.slice(0, 500) ?? null,
     })
     .select("id")
     .single()
