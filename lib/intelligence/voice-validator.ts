@@ -12,24 +12,25 @@ export type VoiceValidation = {
 }
 
 const HARD_BLOCK_PATTERNS = [
-  /\\b(?:steal|hack|doxx|phish|impersonat(?:e|ion))\\b/i,
-  /\\b(?:send|share)\\s+(?:your|my)\\s+(?:password|seed phrase|private key|otp)\\b/i,
+  /\b(?:steal|hack|doxx|phish|impersonat(?:e|ion))\b/i,
+  /\b(?:send|share)\s+(?:your|my)\s+(?:password|seed phrase|private key|otp)\b/i,
 ]
 
 function deterministicFlags(text: string) {
   const flags: string[] = []
-  if (/\\p{Cc}/u.test(text)) flags.push("control_character")
-  if (/\\u200b|\\u200c|\\u200d|\\ufeff/.test(text)) flags.push("hidden_unicode")
-  if (/(.)\\1{14,}/u.test(text)) flags.push("repeated_character_spam")
-  if ((text.match(/https?:\\/\\//gi) ?? []).length > 3) flags.push("excessive_urls")
+  if (/\p{Cc}/u.test(text)) flags.push("control_character")
+  if (/\u200b|\u200c|\u200d|\ufeff/.test(text)) flags.push("hidden_unicode")
+  if (/(.)\1{14,}/u.test(text)) flags.push("repeated_character_spam")
+  if ((text.match(/https?:\/\//gi) ?? []).length > 3) flags.push("excessive_urls")
   if (HARD_BLOCK_PATTERNS.some(pattern => pattern.test(text))) flags.push("unsafe_or_credential_request")
   return flags
 }
 
 function parseModelJson(raw: string): Partial<VoiceValidation> {
-  const cleaned = raw.trim().replace(/^\\u0060\\u0060\\u0060(?:json)?/i, "").replace(/\\u0060\\u0060\\u0060$/i, "").trim()
+  const fence = String.fromCharCode(96).repeat(3)
+  const cleaned = raw.trim().replace(new RegExp("^" + fence + "(?:json)?", "i"), "").replace(new RegExp(fence + "$", "i"), "").trim()
   try { return JSON.parse(cleaned) as Partial<VoiceValidation> } catch {
-    const match = cleaned.match(/\\{[\\s\\S]*\\}/)
+    const match = cleaned.match(/\{[\s\S]*\}/)
     return match ? JSON.parse(match[0]) as Partial<VoiceValidation> : {}
   }
 }
