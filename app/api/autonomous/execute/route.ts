@@ -4,6 +4,8 @@ import { getValidAccessToken, postTweet, postReply } from "@/lib/x/api"
 import { authorizeAutonomousAction } from "@/lib/execution-policy"
 import { getChatModel } from "@/lib/openrouter"
 import { generateText } from "ai"
+import { verifyXWrite, persistVerification } from "@/lib/intelligence/verification"
+import { recordOutcome } from "@/lib/intelligence/outcomes"
 
 export const maxDuration = 60
 
@@ -29,8 +31,32 @@ export async function POST(request:Request){
 
   try{
     const posted=body.actionType==="reply" ? await postReply(conn.access_token,clean,String(body.targetId)) : await postTweet(conn.access_token,clean)
-    await admin.from("ashqe_action_log").update({content:clean,status:"executed",reason:"autonomous_executor",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
-    return NextResponse.json({executed:true,id:posted.id,text:posted.text,url:"https://x.com/"+conn.x_username+"/status/"+posted.id})
+    const verification = await verifyXWrite(admin, {
+      userId: body.userId,
+      actionId: authz.reservationId,
+      expected: { authorId: conn.x_user_id, text: posted.text, tweetId: posted.id, replyToId: body.actionType === "reply" ? body.targetId : undefined },
+    })
+    const verificationId = await persistVerification(admin, {
+      userId: body.userId,
+      actionId: authz.reservationId,
+      verificationType: body.actionType === "reply" ? "x_reply_readback" : "x_post_readback",
+      result: verification,
+    })
+    const outcomeId = await recordOutcome(admin, {
+      userId: body.userId,
+      actionId: authz.reservationId,
+      verificationId,
+      state: verification.status,
+      confidence: verification.confidence,
+      metrics: { tweetId: posted.id, actionType: body.actionType },
+      unknownReason: verification.reason,
+    })
+    if (verification.status !== "verified") {
+      await admin.from("ashqe_action_log").update({content:clean,status:"failed",reason:"x_write_verification_failed",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
+      return NextResponse.json({executed:false,id:posted.id,verificationId,outcomeId,error:"x_write_verification_failed"},{status:502})
+    }
+    await admin.from("ashqe_action_log").update({content:clean,status:"executed",reason:"autonomous_executor_verified",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
+    return NextResponse.json({executed:true,id:posted.id,text:posted.text,verificationId,outcomeId,url:"https://x.com/"+conn.x_username+"/status/"+posted.id})
   }catch(error){
     await admin.from("ashqe_action_log").update({content:clean,status:"failed",reason:error instanceof Error?error.message:"x_action_failed",policy_snapshot:authz.policy}).eq("id",authz.reservationId).eq("user_id",body.userId)
     return NextResponse.json({error:"x_action_failed"},{status:502})
