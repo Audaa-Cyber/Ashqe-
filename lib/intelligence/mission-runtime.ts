@@ -50,6 +50,29 @@ export async function transitionMission(
   return data
 }
 
+export async function failMissionWithRecovery(
+  supabase: SupabaseClient,
+  input: { userId: string; missionId: string; reason: string },
+) {
+  const plan = buildRecoveryPlan(input.reason)
+  const { data, error } = await supabase
+    .from("ashqe_missions")
+    .update({
+      status: "diagnosing",
+      failure_class: plan.classification.type,
+      recovery_strategy: plan.next,
+      checkpoint: { failureReason: input.reason, diagnosedAt: new Date().toISOString() },
+    })
+    .eq("id", input.missionId)
+    .eq("user_id", input.userId)
+    .in("status", ["running", "executing", "verifying", "failed"])
+    .select("id,status,failure_class,recovery_strategy,checkpoint")
+    .maybeSingle()
+  if (error) throw new Error("mission_failure_record_failed")
+  if (!data) throw new Error("mission_failure_transition_conflict")
+  return data
+}
+
 export async function claimNextMissionStep(
   supabase: SupabaseClient,
   input: { userId: string; missionId: string; position: number },
