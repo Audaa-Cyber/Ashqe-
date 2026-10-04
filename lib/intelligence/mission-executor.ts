@@ -17,6 +17,7 @@ type MissionRow = {
   authority_ceiling: unknown
   checkpoint: Record<string, unknown>
   expires_at?: string | null
+  decision_id?: string | null
 }
 
 type StepRow = {
@@ -101,7 +102,7 @@ export async function executeMissionStep(supabase: SupabaseClient, input: {
 }) {
   const { data: mission, error: missionError } = await supabase
     .from("ashqe_missions")
-    .select("id,user_id,objective,status,current_step,attempt,authority_ceiling,checkpoint,expires_at")
+    .select("id,user_id,objective,status,current_step,attempt,authority_ceiling,checkpoint,expires_at,decision_id")
     .eq("id", input.missionId).eq("user_id", input.userId).maybeSingle()
   if (missionError || !mission) throw new Error("mission_not_found")
 
@@ -119,6 +120,18 @@ export async function executeMissionStep(supabase: SupabaseClient, input: {
   if (!rawStep) throw new Error("mission_step_not_found")
   const step = rawStep as StepRow
   if (step.status !== "ready") throw new Error("mission_step_not_ready")
+
+  const actionType = step.input?.actionType
+  if (actionType === "post" || actionType === "reply") {
+    if (!mission.decision_id) throw new Error("write_mission_decision_required")
+    const { data: decision } = await supabase
+      .from("ashqe_decisions")
+      .select("id,status")
+      .eq("id", mission.decision_id)
+      .eq("user_id", input.userId)
+      .maybeSingle()
+    if (!decision || decision.status !== "approved") throw new Error("write_mission_approval_required")
+  }
 
   const target = typeof step.input?.agent === "string" ? step.input.agent : ""
   const executableAgents = ["orchestrator","research","content","analytics","operator"] as const
